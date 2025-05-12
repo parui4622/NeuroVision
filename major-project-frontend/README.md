@@ -1,125 +1,173 @@
 
----
+# 🧠 Alzhe## 🚀 Tech Stack
 
-### ✅ `README.md`
+### Frontend
+- **React 18** with Vite - Modern, fast build tool and development server
+- **React Router** - Client-side routing and navigation
+- **Lucide React** - Beautiful, consistent icons
+- **Custom Components** - Including Aurora for UI effects
+- **Modern CSS3** - Flexible and responsive styling
+- **JWT Authentication** - Secure user sessions
 
-```markdown
-# 🧠 Alzheimer's Disease Detection - AI/ML Project
+### Backend
+- **Node.js & Express.js** - Fast, unopinionated web framework
+- **MongoDB & Mongoose** - Flexible, scalable database
+- **JWT & bcrypt** - Secure authentication and password hashing
+- **PyTorch & Python** - Powerful AI model integration
+- **CORS & Helmet** - Enhanced API security's Detection System
 
-This project is built by BCA final year students to detect Alzheimer's Disease using deep learning and brain MRI images.
+A modern web-based application for early detection and monitoring of Alzheimer's disease using deep learning and medical imaging analysis.
 
-It uses Python and machine learning to classify MRI images into 4 categories:
+## Project Overview
+
+This comprehensive full-stack application implements an AI-powered Alzheimer's detection system that enables healthcare professionals and patients to:
+- Upload and analyze brain MRI scans
+- Get real-time AI-powered analysis
+- Track patient progress over time
+- Manage medical histories securely
 - AD: Alzheimer’s Disease
 - CN: Cognitively Normal
 - EMCI: Early Mild Cognitive Impairment
 - LMCI: Late Mild Cognitive Impairment
 
----
+## 🛠️ Key Features
 
-## 📦 Features
+### For Doctors
+- Secure dashboard for patient management
+- MRI scan upload and analysis
+- Patient history tracking
+- Diagnostic report generation
+- Real-time AI analysis results
 
-- Easy to train and test
-- Built using Python and TensorFlow
-- Google Colab/Local Support
-- Open for contributions via feature branches
+### For Patients
+- Personal health dashboard
+- Medical history access
+- Scan result visualization
+- Secure doctor communication
+- Progress tracking
 
----
+### For Administrators
+- User management system
+- Doctor verification process
+- System monitoring tools
+- Analytics dashboard
+- Security audit logs
 
-## 🚀 How to Run This Project Locally
+## 🚀 Getting Started
 
-### 1️⃣ Clone the Repository
+### Prerequisites
+- Node.js (v18 or higher)
+- MongoDB (v5 or higher)
+- Python (v3.8 or higher)
+- npm or yarn package manager
 
+### Installation
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/saurav4622/Alzheimers-Major-Project.git
-cd Alzheimers-Major-Project
+git clone https://github.com/yourusername/alzheimers-detection-system.git
 ```
 
-### 2️⃣ Set Up Python Environment (optional but recommended)
-
+2. Frontend Setup:
 ```bash
-python -m venv venv
-# Activate:
-# On Windows
-venv\Scripts\activate
-# On Mac/Linux
-source venv/bin/activate
+cd major-project-frontend
+npm install
 ```
 
-### 3️⃣ Install the Required Packages
-
+3. Backend Setup:
 ```bash
+cd ../major-project-backend
+npm install
+```
+
+4. Python Dependencies:
+```bash
+cd python
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Add Dataset
-
-- Download the dataset manually from [Kaggle](https://www.kaggle.com/)
-- Create a folder named `data/` and place the images like this:
-
-```
-data/
-├── AD/
-├── CN/
-├── EMCI/
-└── LMCI/
+5. Environment Setup:
+Create a `.env` file in the backend directory:
+```env
+MONGODB_URI=mongodb://localhost:27017/Alzheimers_Database
+JWT_SECRET=your-secret-key
+PORT=5000
 ```
 
-### 5️⃣ Run the Project
+### Running the Application
 
-Use Google Colab **OR** run locally:
-
+1. Start MongoDB:
 ```bash
-python train_model.py
+mongod
 ```
 
----
-
-## 👥 How to Contribute with Your Own Branch
-
-### 1️⃣ Create a New Branch With Your Name
-
+2. Start Backend Server:
 ```bash
-git checkout -b feature/YourName
+cd major-project-backend
+npm run dev
 ```
 
-Example:
+3. Start Frontend Development Server:
 ```bash
-git checkout -b feature/Sourabh
+cd major-project-frontend
+npm run dev
 ```
 
-### 2️⃣ Add & Commit Your Changes
+The application will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5000
 
-```bash
-git add .
-git commit -m "Added feature: your change here"
-```
+## 🔒 Security Features
 
-### 3️⃣ Push to GitHub
+- JWT-based authentication and authorization
+- Secure password hashing with bcrypt
+- MongoDB session management
+- Role-based access control (RBAC)
+- CORS protection
+- Request rate limiting
+- Secure file upload handling
+- XSS protection
 
-```bash
-git push origin feature/YourName
-```
+## 🌟 Core Functionalities
 
-> 🔐 If you face a **403 error**, make sure you're logged in to GitHub and have access to the repo.
+1. AI-Powered Analysis
+   - Deep learning model for MRI analysis
+   - Multiple classification categories
+   - Real-time processing
+   - Result visualization
 
-### 4️⃣ Open a Pull Request
+2. User Management
+   - Multi-role authentication
+   - Profile management
+   - Password recovery
+   - Session handling
 
-- Go to: [GitHub Repo](https://github.com/saurav4622/Alzheimers-Major-Project)
-- You'll see a prompt to open a pull request for your branch
-- Add title and description > Click **"Create Pull Request"**
+3. Medical Records
+   - Secure storage
+   - Easy retrieval
+   - History tracking
+   - Report generation
 
----
+## 📱 Mobile Responsiveness
 
-## 📞 Contact
-
-For any help or issues, feel free to contact:
-- Sourabh – [GitHub](https://github.com/saurav4622)
-
----
+The application is fully responsive and optimized for:
+- Desktop computers
+- Tablets
+- Mobile devices
 
 ## 📄 License
 
-For educational and academic use only.
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📞 Contact
+
+For any queries regarding this project, please contact:
+- Email: admin@alzheimers.com
+- GitHub: [Project Repository](https://github.com/yourusername/alzheimers-detection-system)
 
 ```
 
