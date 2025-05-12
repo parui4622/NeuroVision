@@ -1,21 +1,48 @@
 import axios from "axios";
 import { FileUp, UploadCloud, UserCircle2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../StatefullComponents/DashboardButton/Button";
 import DateCalendarValue from "../../StatefullComponents/DateCalender/dateCalender";
 import "./dashboard.css";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState(""); // "success" or "error"
+  const [messageType, setMessageType] = useState("");
   const [prediction, setPrediction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    // Check for authentication
+    const token = localStorage.getItem('token');
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token || !storedUser) {
+      navigate('/login');
+      return;
+    }
+
+    // For developer access, allow any role to view the dashboard
+    if (token === 'dev-bypass-token') {
+      setUser(storedUser);
+      return;
+    }
+
+    // For regular access, verify user role
+    if (storedUser.role === 'admin') {
+      navigate('/admin');
+      return;
+    } else if (storedUser.role === 'doctor') {
+      navigate('/doctor');
+      return;
+    }
+
+    setUser(storedUser);
+  }, [navigate]);
 
   const validateFile = (file) => {
-    // List of accepted image extensions
     const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
     
     if (!file) return false;
@@ -44,11 +71,9 @@ const Dashboard = () => {
       return;
     }
 
-    // Convert the file to base64
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        // Store in localStorage
         localStorage.setItem('mriImage', reader.result);
         localStorage.setItem('mriImageName', selectedFile.name);
         localStorage.setItem('mriUploadDate', new Date().toISOString());
@@ -56,10 +81,8 @@ const Dashboard = () => {
         setMessage("Image saved successfully!");
         setMessageType("success");
 
-        // Prepare the image data for the prediction API
-        const imageData = reader.result.split(',')[1]; // Remove data:image/jpeg;base64, part
+        const imageData = reader.result.split(',')[1];
 
-        // Send to prediction API
         setIsLoading(true);
         const response = await axios.post('http://localhost:5000/api/predict', {
           image: imageData,
@@ -92,14 +115,15 @@ const Dashboard = () => {
     }
     handleSave();
   };
-
   const handleLogout = () => {
-    // Clear any auth tokens or user data if they exist
+    // Clear all auth-related items
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Clear MRI-related items
     localStorage.removeItem('mriImage');
     localStorage.removeItem('mriImageName');
     localStorage.removeItem('mriUploadDate');
-    // Navigate to cover page
-    navigate('/');
+    navigate('/login');
   };
 
   return (
@@ -122,7 +146,7 @@ const Dashboard = () => {
       <main className="main-content">
         <header className="main-content__header">
           <div>
-            <h2>Hello <strong>Tassy Omah</strong>,</h2>
+            <h2>Hello <strong>{user?.name || "User"}</strong>,</h2>
             <p>Have a nice day and don't forget to take care of your health!</p>
             <a href="#" className="main-content__link">Learn more →</a>
           </div>
@@ -178,14 +202,16 @@ const Dashboard = () => {
             <span>Previous Reports</span>
           </div>
         </section>
-      </main>
-
-      <aside className="right-panel">
+      </main>      <aside className="right-panel">
         <div className="profile-card">
-          <h3>Charles Robbie</h3>
-          <p>25 years old | New York, USA</p>
-        </div>        <div className="calendar-container">
+          <h3>{user?.name || "Guest User"}</h3>
+          <p>{user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}</p>
+        </div>
+        <div className="calendar-container">
           <DateCalendarValue />
+        </div>
+        <div className="background-image">
+          <img src="https://cdn-icons-png.flaticon.com/512/2920/2920081.png" alt="Mind Graphic" />
         </div>
       </aside>
     </div>

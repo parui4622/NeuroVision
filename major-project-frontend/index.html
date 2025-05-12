@@ -3,8 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AMP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />    <title>AMP</title>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script>
+      function initGoogleAuth() {
+        gapi.load('auth2', function() {
+          gapi.auth2.init({
+            client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'
+          });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
