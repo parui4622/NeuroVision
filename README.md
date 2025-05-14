@@ -166,8 +166,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📞 Contact
 
 For any queries regarding this project, please contact:
-- Email: admin@alzheimers.com
-- GitHub: [Project Repository](https://github.com/yourusername/alzheimers-detection-system)
+- Name: Sourabh Parui
+- Email: paruisourabh4622@gmail.com
+- GitHub: [saurav4622](https://github.com/yourusername/alzheimers-detection-system)
 
 ```
 
