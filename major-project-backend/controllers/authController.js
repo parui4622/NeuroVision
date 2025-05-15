@@ -1,8 +1,16 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const Session = require('../models/Session');
 const config = require('../config');
+
+function generatePatientSerial() {
+    // Example: PAT-YYYYMMDD-<random4>
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
+    return `PAT-${date}-${rand}`;
+}
 
 exports.signup = async (req, res) => {
     try {
@@ -15,6 +23,15 @@ exports.signup = async (req, res) => {
                 success: false, 
                 error: "Please provide all required fields" 
             });
+        }
+
+        let patientInfoToSave = patientInfo;
+        if (role === 'patient') {
+            if (!patientInfo || !patientInfo.dateOfBirth) {
+                return res.status(400).json({ error: 'Date of birth is required for patients.' });
+            }
+            // Always generate and assign a unique serial
+            patientInfoToSave = { ...patientInfo, serial: generatePatientSerial() };
         }
 
         // Check if the user already exists
@@ -46,8 +63,8 @@ exports.signup = async (req, res) => {
                 ...doctorInfo,
                 isVerified: false // Doctors need verification
             };
-        } else if (role === 'patient' && patientInfo) {
-            userData.patientInfo = patientInfo;
+        } else if (role === 'patient') {
+            userData.patientInfo = patientInfoToSave;
         }
 
         // Create new user

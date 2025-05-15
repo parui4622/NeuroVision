@@ -13,8 +13,7 @@ const Dashboard = () => {
   const [messageType, setMessageType] = useState("");
   const [prediction, setPrediction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState(null);
-  useEffect(() => {
+  const [user, setUser] = useState(null);  useEffect(() => {
     // Check for authentication
     const token = localStorage.getItem('token');
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -39,7 +38,29 @@ const Dashboard = () => {
       return;
     }
 
-    setUser(storedUser);
+    // Fetch the complete user data to ensure we have the patient serial
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/auth/validate-session', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (response.data && response.data.user) {
+          setUser(response.data.user);
+          // Update localStorage with complete user data including serial
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        } else {
+          setUser(storedUser);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setUser(storedUser);
+      }
+    };
+
+    fetchUserData();
   }, [navigate]);
 
   const validateFile = (file) => {
@@ -206,6 +227,9 @@ const Dashboard = () => {
         <div className="profile-card">
           <h3>{user?.name || "Guest User"}</h3>
           <p>{user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}</p>
+          {user?.patientInfo?.serial && (
+            <p className="patient-serial">ID: {user.patientInfo.serial}</p>
+          )}
         </div>
         <div className="calendar-container">
           <DateCalendarValue />

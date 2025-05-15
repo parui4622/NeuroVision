@@ -280,6 +280,17 @@
   text-align: center;
 }
 
+.patient-serial {
+  margin-top: 5px;
+  font-size: 0.9em;
+  font-family: monospace;
+  background-color: #062859;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
 .calendar-container {
   background: #062859;
   padding: 16px;

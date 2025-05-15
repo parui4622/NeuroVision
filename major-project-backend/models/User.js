@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { type: String, unique: true, required: true },
+    email: { type: String, required: true }, // Removed unique constraint
     password: { type: String, required: true },
     role: {
         type: String,
@@ -23,7 +23,8 @@ const userSchema = new mongoose.Schema({
     patientInfo: {
         dateOfBirth: { type: Date },
         gender: { type: String },
-        medicalHistory: [String]
+        medicalHistory: [String],
+        serial: { type: String, unique: true, sparse: true }
     },
     // Google Auth fields
     googleId: { type: String },
@@ -51,11 +52,43 @@ const userSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'suspended'],
         default: 'active'
     },
+    resetToken: { type: String },
+    resetTokenExpiry: { type: Date },
     meta: {
         reportCount: { type: Number, default: 0 },
         successfulScans: { type: Number, default: 0 },
         failedScans: { type: Number, default: 0 }
     }
 });
+
+// Adding compound indexes for better filtering and sorting
+userSchema.index({ role: 1, status: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ 'doctorInfo.isVerified': 1, role: 1 });
+
+// Check if any index exists on email field and remove it
+userSchema.collection.dropIndex('email_1', function(err, result) {
+  if (err && err.code !== 27) {
+    console.log('Error dropping email index:', err);
+  } else {
+    console.log('Successfully ensured email is not unique');
+  }
+});
+
+// Virtual field to help in MongoDB Compass visualization
+userSchema.virtual('userType').get(function() {
+    if (this.role === 'doctor') {
+        return `Doctor - ${this.doctorInfo.specialty || 'Unspecified'}`;
+    } else if (this.role === 'patient') {
+        return 'Patient';
+    } else if (this.role === 'admin') {
+        return 'Admin';
+    }
+    return this.role;
+});
+
+// Ensure virtuals are included in JSON output
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('User', userSchema);

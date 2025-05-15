@@ -203,6 +203,7 @@ const AdminDashboard = () => {
                       <tr>
                         <th>Name</th>
                         <th>Email</th>
+                        <th>Serial Number</th>
                         <th>Registration Date</th>
                         <th>Actions</th>
                       </tr>
@@ -212,6 +213,7 @@ const AdminDashboard = () => {
                         <tr key={patient._id}>
                           <td>{patient.name}</td>
                           <td>{patient.email}</td>
+                          <td>{patient.patientInfo?.serial || 'N/A'}</td>
                           <td>{new Date(patient.createdAt).toLocaleDateString()}</td>
                           <td>
                             <button 

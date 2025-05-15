@@ -1,0 +1,38 @@
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    build: ./major-project-backend
+    container_name: backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/Alzheimers_Database
+      - JWT_SECRET=your-secret-key
+      - PORT=5000
+      # Add other env vars as needed
+    depends_on:
+      - mongo
+
+  frontend:
+    build: ./major-project-frontend
+    container_name: frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:

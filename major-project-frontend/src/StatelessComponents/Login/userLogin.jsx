@@ -11,14 +11,21 @@ const UserLogin = () => {
   const [role, setRole] = useState("patient");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordAttempts, setPasswordAttempts] = useState(0);
   
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
-
-    // Validation
-    if (!email || !password) {
-      setError("Please fill in both fields!");
+    setError("");    // Validation
+    if (!email && !password) {
+      setError("Please enter your email and password");
+      return;
+    }
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password");
       return;
     }
 
@@ -29,29 +36,37 @@ const UserLogin = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email, password, role })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
+      });          const data = await response.json();      if (!response.ok) {
         // Handle different error cases
-        if (response.status === 401) {
-          if (role === 'admin') {
-            throw new Error('Access Denied - Administrative privileges required');
+        if (response.status === 401) {          if (data.error === "Invalid password") {
+            const attempts = passwordAttempts + 1;
+            setPasswordAttempts(attempts);
+            if (attempts >= 3) {
+              setError("Too many failed attempts. Please reset your password.");
+            } else {
+              setError(`Invalid password - Attempt ${attempts} of 3`);
+            }
           } else {
-            throw new Error(`${role === 'doctor' ? 'Doctor' : 'User'} not found. Please sign up first.`);
+            setError(role === 'admin' 
+              ? 'Access Denied - Administrative privileges required'
+              : `${role === 'doctor' ? 'Doctor' : 'User'} not registered. Please sign up first.`
+            );
           }
+          return;
         }
-        throw new Error(data.error || 'Login failed');
-      }
-
-      // Verify role matches
+        if (response.status === 403) {
+          setError(`Invalid credentials for ${role} access. Please check your role selection.`);
+          return;
+        }
+        setError(data.error || 'Login failed. Please check your credentials.');
+        return;
+      }      // Verify role matches
       if (data.user.role !== role) {
-        if (role === 'admin') {
-          throw new Error('Access Denied - Administrative privileges required');
-        } else {
-          throw new Error(`Invalid credentials for ${role} access`);
-        }
+        setError(role === 'admin'
+          ? 'Access Denied - Administrative privileges required'
+          : `Access Denied - This account is registered as a ${data.user.role}, not a ${role}`
+        );
+        return;
       }
 
       localStorage.setItem('token', data.token);
@@ -104,10 +119,32 @@ const UserLogin = () => {
 
   return (
     <div className="login-page">
-      <Aurora />
-      <div className="login-card">
-        <h2>Login</h2>
-        {error && <p className="error-message">{error}</p>}
+      <Aurora />      <div className="login-card">
+        <h2>Login</h2>        {error && (
+          <div className={`error-container ${error.includes('password') ? 'password-error' : ''}`}>
+            <p className="error-message">{error}</p>
+            {/* Only show signup button if user is not registered, not for invalid password */}
+            {error.includes('not registered') && (
+              <button 
+                type="button" 
+                className="signup-redirect-btn"
+                onClick={() => navigate('/signup')}
+              >
+                Sign Up Now
+              </button>
+            )}
+            {/* Show forgot password only for password errors */}
+            {(error.includes('Invalid password') || error === 'Too many failed attempts. Please reset your password.') || error === 'Invalid password - Attempt 1 of 3' || error === 'Invalid password - Attempt 2 of 3' ? (
+              <button 
+                type="button" 
+                className="forgot-password-btn"
+                onClick={() => navigate('/forgot-password')}
+              >
+                Forgot Password?
+              </button>
+            ) : null}
+          </div>
+        )}
         <form onSubmit={handleLogin}>
           <input
             type="email"
@@ -150,6 +187,16 @@ const UserLogin = () => {
             Developer Access - {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
           </button>
         </form>
+        <div style={{ marginTop: '12px', textAlign: 'center' }}>
+          <button
+            type="button"
+            className="forgot-password-btn"
+            style={{ background: 'none', border: 'none', color: '#4a00e0', cursor: 'pointer', textDecoration: 'underline', fontSize: '15px' }}
+            onClick={() => navigate('/forgot-password')}
+          >
+            Forgot Password?
+          </button>
+        </div>
       </div>
     </div>
   );
