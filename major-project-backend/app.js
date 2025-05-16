@@ -4,6 +4,7 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const predictRoutes = require('./routes/predict');
 const passwordResetRoutes = require('./routes/passwordReset');
+const doctorRoutes = require('./routes/doctor');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/predict', predictRoutes);
 app.use('/api/password', passwordResetRoutes);
+app.use('/api/doctor', doctorRoutes);
 
 // Root route
 app.get('/', (req, res) => {

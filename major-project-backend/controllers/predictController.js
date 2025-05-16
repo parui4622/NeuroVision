@@ -78,6 +78,11 @@ exports.predict = async (req, res) => {
                         status: 'pending'
                     });
                     
+                    // If patient has an assigned doctor, add to the report
+                    if (patient.assignedDoctor) {
+                        report.doctor = patient.assignedDoctor;
+                    }
+                    
                     await report.save();
                     
                     // Update user's meta information
@@ -88,6 +93,23 @@ exports.predict = async (req, res) => {
                     
                     result.reportId = report._id;
                     result.reportSaved = true;
+                    
+                    // Notify assigned doctor if exists
+                    if (patient.assignedDoctor) {
+                        try {
+                            const doctor = await User.findById(patient.assignedDoctor);
+                            if (doctor) {
+                                const emailService = require('../utils/emailService');
+                                await emailService.sendNewReportNotificationEmail(
+                                    doctor.email,
+                                    doctor.name,
+                                    patient.name
+                                );
+                            }
+                        } catch (emailError) {
+                            console.error('Failed to notify doctor:', emailError);
+                        }
+                    }
                 }
                 
                 res.json({
@@ -135,6 +157,12 @@ function getClassificationInterpretation(classification) {
             description: 'The scan indicates late-stage mild cognitive impairment. This represents a more advanced stage with more noticeable memory and cognitive issues.',
             recommendations: 'Consultation with a neurologist is recommended. Early intervention can help manage symptoms and potentially slow progression.'
         }
+    };
+    
+    return interpretations[classification] || {
+        fullName: classification,
+        description: 'Classification interpretation not available',
+        recommendations: 'Please consult with a healthcare professional for proper diagnosis and recommendations.'
     };
     
     return interpretations[classification] || {

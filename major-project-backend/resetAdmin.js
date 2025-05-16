@@ -18,18 +18,24 @@ async function main() {
   await mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
   console.log('Connected to MongoDB');
 
-  const email = await prompt('Admin Email: ');
-  const admin = await User.findOne({ email, role: 'admin' });
-  if (!admin) {
-    console.log('No admin found with this email.');
-    rl.close();
-    mongoose.disconnect();
-    return;
-  }
-  const newPassword = await prompt('New Password: ');
-  admin.password = await bcrypt.hash(newPassword, 10);
+  // Delete all admin users
+  await User.deleteMany({ role: 'admin' });
+  console.log('All admin users deleted.');
+
+  // Prompt to create a new admin
+  const name = await prompt('New Admin Name: ');
+  const email = await prompt('New Admin Email: ');
+  const password = await prompt('New Admin Password: ');
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const admin = new User({
+    name,
+    email,
+    password: hashedPassword,
+    role: 'admin',
+    isEmailVerified: true
+  });
   await admin.save();
-  console.log('Admin password reset successfully!');
+  console.log('New admin created and verified!');
   rl.close();
   mongoose.disconnect();
 }

@@ -14,20 +14,12 @@ const UserSignUp = () => {
     password: "",
     confirmPassword: "",
     role: "patient",
-    doctorInfo: {
-      licenseNumber: "",
-      specialty: "",
-      hospital: "",
-      yearsOfExperience: "",
-      education: ""
-    },
     patientInfo: {
       dateOfBirth: "",
       gender: ""
     }
   });
   
-  const [showDoctorFields, setShowDoctorFields] = useState(false);
   const navigate = useNavigate();
 
   const validateField = (name, value) => {
@@ -52,21 +44,6 @@ const UserSignUp = () => {
         if (!value) error = 'Please confirm your password';
         else if (value !== form.password) error = 'Passwords do not match';
         break;
-      case 'doctorInfo.licenseNumber':
-        if (form.role === 'doctor' && !value) error = 'License number is required';
-        break;
-      case 'doctorInfo.specialty':
-        if (form.role === 'doctor' && !value) error = 'Specialty is required';
-        break;
-      case 'doctorInfo.hospital':
-        if (form.role === 'doctor' && !value) error = 'Hospital is required';
-        break;
-      case 'doctorInfo.yearsOfExperience':
-        if (form.role === 'doctor' && !value) error = 'Years of experience is required';
-        break;
-      case 'doctorInfo.education':
-        if (form.role === 'doctor' && !value) error = 'Education details are required';
-        break;
       case 'patientInfo.dateOfBirth':
         if (form.role === 'patient' && !value) error = 'Date of birth is required';
         break;
@@ -85,6 +62,7 @@ const UserSignUp = () => {
     const error = validateField(name, e.target.value);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
@@ -104,13 +82,10 @@ const UserSignUp = () => {
     }
 
     if (name === 'role') {
-      setShowDoctorFields(value === 'doctor');
-      // Clear errors when switching roles
       setErrors({});
       setTouched({});
     }
 
-    // Validate field if it's been touched
     if (touched[name]) {
       const error = validateField(name, value);
       setErrors(prev => ({ ...prev, [name]: error }));
@@ -118,7 +93,6 @@ const UserSignUp = () => {
   };
 
   const handleGoogleSignup = async () => {
-    // Initialize Google Sign-In
     const auth2 = await window.gapi.auth2.getAuthInstance();
     const googleUser = await auth2.signIn();
     
@@ -128,7 +102,7 @@ const UserSignUp = () => {
       email: profile.getEmail(),
       googleId: profile.getId(),
       picture: profile.getImageUrl(),
-      role: 'patient' // Google signup is only for patients
+      role: 'patient'
     };
     
     try {
@@ -148,24 +122,17 @@ const UserSignUp = () => {
       alert(error.message);
     }
   };
+  
   const validateForm = () => {
     const newErrors = {};
     const newTouched = {};
     
-    // Validate basic fields
     ['name', 'email', 'password', 'confirmPassword'].forEach(field => {
       newTouched[field] = true;
       newErrors[field] = validateField(field, form[field]);
     });
     
-    // Validate role-specific fields
-    if (form.role === 'doctor') {
-      ['licenseNumber', 'specialty', 'hospital', 'yearsOfExperience', 'education'].forEach(field => {
-        const fullField = `doctorInfo.${field}`;
-        newTouched[fullField] = true;
-        newErrors[fullField] = validateField(fullField, form.doctorInfo[field]);
-      });
-    } else if (form.role === 'patient') {
+    if (form.role === 'patient') {
       ['dateOfBirth', 'gender'].forEach(field => {
         const fullField = `patientInfo.${field}`;
         newTouched[fullField] = true;
@@ -183,7 +150,6 @@ const UserSignUp = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      // Scroll to the first error if any
       const firstError = document.querySelector('.field-error');
       if (firstError) {
         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -191,21 +157,14 @@ const UserSignUp = () => {
       return;
     }
     try {
-      // Format the dateOfBirth as ISO string if it exists
       const formattedForm = {
         ...form,
-        doctorInfo: form.role === 'doctor' ? {
-          ...form.doctorInfo,
-          yearsOfExperience: parseInt(form.doctorInfo.yearsOfExperience) || 0
-        } : undefined,
         patientInfo: form.role === 'patient' ? {
           ...form.patientInfo,
           dateOfBirth: form.patientInfo.dateOfBirth ? new Date(form.patientInfo.dateOfBirth).toISOString() : undefined
         } : undefined
       };
 
-      // Remove undefined fields
-      if (!formattedForm.doctorInfo) delete formattedForm.doctorInfo;
       if (!formattedForm.patientInfo) delete formattedForm.patientInfo;
 
       console.log('Submitting form:', { ...formattedForm, password: '[REDACTED]' });
@@ -223,22 +182,9 @@ const UserSignUp = () => {
       const data = await response.json();
       console.log('Response data:', data);      
       if (response.ok) {
-        // Save the token and user data
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        alert('Registration successful!');
-        
-        // Redirect based on role
-        switch (form.role) {
-          case "doctor":
-            navigate('/doctor');
-            break;
-          case "patient":
-            navigate('/dashboard');
-            break;
-          default:
-            navigate('/dashboard');
-        }
+        // Always require OTP verification after signup
+        navigate('/verify-otp', { state: { email: form.email, userId: data.userId, role: form.role } });
+        return;
       } else {
         throw new Error(data.error || 'Failed to register');
       }
@@ -261,7 +207,9 @@ const UserSignUp = () => {
           >
             <option value="patient">Patient</option>
             <option value="doctor">Doctor</option>
-          </select>          <div className="form-group">
+          </select>
+          
+          <div className="form-group">
             <label className="required-field">Full Name</label>
             <input
               type="text"
@@ -346,95 +294,6 @@ const UserSignUp = () => {
               <div className="field-error">{errors.confirmPassword}</div>
             )}
           </div>
-
-          {showDoctorFields && (
-            <div className="doctor-fields">
-              <h3>Doctor Verification</h3>              <div className="form-group">
-                <label className="required-field">License Number</label>
-                <input
-                  type="text"
-                  name="doctorInfo.licenseNumber"
-                  placeholder="Enter your medical license number"
-                  value={form.doctorInfo.licenseNumber}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors['doctorInfo.licenseNumber'] && touched['doctorInfo.licenseNumber'] ? 'input-error' : ''}
-                  required
-                />
-                {errors['doctorInfo.licenseNumber'] && touched['doctorInfo.licenseNumber'] && (
-                  <div className="field-error">{errors['doctorInfo.licenseNumber']}</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="required-field">Specialty</label>
-                <input
-                  type="text"
-                  name="doctorInfo.specialty"
-                  placeholder="Enter your medical specialty"
-                  value={form.doctorInfo.specialty}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors['doctorInfo.specialty'] && touched['doctorInfo.specialty'] ? 'input-error' : ''}
-                  required
-                />
-                {errors['doctorInfo.specialty'] && touched['doctorInfo.specialty'] && (
-                  <div className="field-error">{errors['doctorInfo.specialty']}</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="required-field">Hospital/Clinic</label>
-                <input
-                  type="text"
-                  name="doctorInfo.hospital"
-                  placeholder="Enter your hospital or clinic name"
-                  value={form.doctorInfo.hospital}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors['doctorInfo.hospital'] && touched['doctorInfo.hospital'] ? 'input-error' : ''}
-                  required
-                />
-                {errors['doctorInfo.hospital'] && touched['doctorInfo.hospital'] && (
-                  <div className="field-error">{errors['doctorInfo.hospital']}</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="required-field">Years of Experience</label>
-                <input
-                  type="number"
-                  name="doctorInfo.yearsOfExperience"
-                  placeholder="Enter your years of experience"
-                  value={form.doctorInfo.yearsOfExperience}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors['doctorInfo.yearsOfExperience'] && touched['doctorInfo.yearsOfExperience'] ? 'input-error' : ''}
-                  required
-                />
-                {errors['doctorInfo.yearsOfExperience'] && touched['doctorInfo.yearsOfExperience'] && (
-                  <div className="field-error">{errors['doctorInfo.yearsOfExperience']}</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="required-field">Education/Qualifications</label>
-                <input
-                  type="text"
-                  name="doctorInfo.education"
-                  placeholder="Enter your education and qualifications"
-                  value={form.doctorInfo.education}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors['doctorInfo.education'] && touched['doctorInfo.education'] ? 'input-error' : ''}
-                  required
-                />
-                {errors['doctorInfo.education'] && touched['doctorInfo.education'] && (
-                  <div className="field-error">{errors['doctorInfo.education']}</div>
-                )}
-              </div>
-            </div>
-          )}
 
           {form.role === 'patient' && (
             <div className="patient-fields">

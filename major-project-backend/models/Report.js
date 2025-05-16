@@ -30,10 +30,22 @@ const reportSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    doctorNotes: {
+        type: String,
+        default: ''
+    },
+    recommendedMedications: [String],
+    recommendedTherapies: [String],
+    followUpDate: Date,
     status: {
         type: String,
         enum: ['pending', 'reviewed', 'archived'],
         default: 'pending'
+    },
+    reviewedAt: Date,
+    reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
     createdAt: {
         type: Date,

@@ -53,10 +53,20 @@ def predict(image_tensor):
     model = load_model()
     with torch.no_grad():
         outputs = model(image_tensor)
+        probabilities = torch.nn.functional.softmax(outputs, dim=1)[0]
         _, predicted = torch.max(outputs, 1)
         
     classes = ['AD', 'CN', 'EMCI', 'LMCI']
-    return classes[predicted.item()]
+    
+    # Get probabilities for each class
+    class_probabilities = {}
+    for i, cls in enumerate(classes):
+        class_probabilities[cls] = float(probabilities[i])
+        
+    return {
+        'prediction': classes[predicted.item()],
+        'probabilities': class_probabilities
+    }
 
 if __name__ == "__main__":
     try:
@@ -70,11 +80,12 @@ if __name__ == "__main__":
             
         # Process image and make prediction
         image_tensor = process_image(image_data)
-        prediction = predict(image_tensor)
+        result = predict(image_tensor)
         
-        # Return prediction
+        # Return prediction with probabilities
         print(json.dumps({
-            'prediction': prediction,
+            'prediction': result['prediction'],
+            'probabilities': result['probabilities'],
             'success': True
         }))
         

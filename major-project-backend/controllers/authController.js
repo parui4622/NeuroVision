@@ -12,9 +12,11 @@ function generatePatientSerial() {
     return `PAT-${date}-${rand}`;
 }
 
+const emailService = require('../utils/emailService');
+
 exports.signup = async (req, res) => {
     try {
-        const { name, email, password, role = 'patient', doctorInfo, patientInfo } = req.body;
+        const { name, email, password, role = 'patient', patientInfo } = req.body;
 
         console.log('Signup attempt:', { email, role, name });
 
@@ -35,33 +37,31 @@ exports.signup = async (req, res) => {
         }
 
         // Check if the user already exists
-        console.log('Checking for existing user...');
-        const existingUser = await User.findOne({ email });
-        
-        if (existingUser) {
-            console.log('User already exists with email:', email);
-            return res.status(400).json({ 
-                success: false,
-                error: "An account with this email already exists" 
-            });
-        }
+        // (Removed duplicate email check to allow multiple users with same email)
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Generate OTP for email verification
+        const otp = emailService.generateOTP();
+        const otpExpiry = new Date();
+        otpExpiry.setMinutes(otpExpiry.getMinutes() + 15); // OTP valid for 15 minutes
 
         // Create user object with basic info
         const userData = {
             name,
             email,
             password: hashedPassword,
-            role
+            role,
+            emailVerificationOTP: otp,
+            otpExpiry,
+            isEmailVerified: false
         };
 
         // Add role-specific information
-        if (role === 'doctor' && doctorInfo) {
+        if (role === 'doctor') {
             userData.doctorInfo = {
-                ...doctorInfo,
-                isVerified: false // Doctors need verification
+                isVerified: true // Doctors are auto-verified now - simplified registration
             };
         } else if (role === 'patient') {
             userData.patientInfo = patientInfoToSave;
@@ -69,36 +69,111 @@ exports.signup = async (req, res) => {
 
         // Create new user
         const user = new User(userData);
-
         await user.save();
 
-        // Create token
-        const token = jwt.sign(
-            { userId: user._id, role: user.role },
-            config.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        // Create session in MongoDB
-        const session = new Session({
-            userId: user._id,
-            token,
-            deviceInfo: req.headers['user-agent']
-        });
-        await session.save();
+        // Send verification email
+        await emailService.sendOTPEmail(email, name, otp);
 
         // Don't send password in response
         const userResponse = user.toObject();
         delete userResponse.password;
 
         res.status(201).json({
-            message: "User created successfully",
-            token,
+            message: "User created successfully. Please verify your email to continue.",
             user: userResponse,
-            sessionId: session._id
+            userId: user._id // Return userId for OTP verification
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+};
+
+exports.verifyEmail = async (req, res) => {
+    try {
+        const { userId, otp } = req.body;
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(400).json({ error: 'User not found' });
+        }
+        
+        // Check OTP validity
+        if (user.emailVerificationOTP !== otp) {
+            return res.status(400).json({ error: 'Invalid OTP' });
+        }
+        
+        // Check if OTP is expired
+        if (new Date() > new Date(user.otpExpiry)) {
+            return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+        }
+        
+        // Mark email as verified
+        user.isEmailVerified = true;
+        user.emailVerificationOTP = null;
+        user.otpExpiry = null;
+        await user.save();
+        
+        // Create token
+        const token = jwt.sign(
+            { userId: user._id, role: user.role },
+            config.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+        
+        // Create session
+        const session = new Session({
+            userId: user._id,
+            token,
+            deviceInfo: req.headers['user-agent']
+        });
+        await session.save();
+        
+        // Don't send password in response
+        const userResponse = user.toObject();
+        delete userResponse.password;
+        
+        res.status(200).json({
+            message: "Email verified successfully",
+            token,
+            user: userResponse,
+            sessionId: session._id,
+            role: user.role // Add role to response for frontend redirect
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.resendOTP = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(400).json({ error: 'User not found' });
+        }
+        
+        if (user.isEmailVerified) {
+            return res.status(400).json({ error: 'Email already verified' });
+        }
+        
+        // Generate new OTP
+        const otp = emailService.generateOTP();
+        const otpExpiry = new Date();
+        otpExpiry.setMinutes(otpExpiry.getMinutes() + 15);
+        
+        user.emailVerificationOTP = otp;
+        user.otpExpiry = otpExpiry;
+        await user.save();
+        
+        // Send verification email
+        await emailService.sendOTPEmail(user.email, user.name, otp);
+        
+        res.status(200).json({ message: 'OTP has been resent to your email' });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -135,6 +210,27 @@ exports.login = async (req, res) => {
         if (!validPassword) {
             return res.status(401).json({ 
                 error: "Invalid email or password"
+            });
+        }
+        
+        // Check if email is verified
+        if (!foundUser.isEmailVerified) {
+            // Generate new OTP
+            const otp = emailService.generateOTP();
+            const otpExpiry = new Date();
+            otpExpiry.setMinutes(otpExpiry.getMinutes() + 15);
+            
+            foundUser.emailVerificationOTP = otp;
+            foundUser.otpExpiry = otpExpiry;
+            await foundUser.save();
+            
+            // Send verification email
+            await emailService.sendOTPEmail(email, foundUser.name, otp);
+            
+            return res.status(401).json({
+                error: "Email not verified",
+                requiresVerification: true,
+                email: foundUser.email
             });
         }
 

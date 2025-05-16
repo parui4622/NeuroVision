@@ -1,22 +1,24 @@
 const User = require('../models/User');
 const mongoose = require('mongoose');
+const SystemConfig = require('../models/SystemConfig');
 
-// Maintain classification state in database instead of memory
-const SystemConfig = mongoose.model('SystemConfig', new mongoose.Schema({
-  key: String,
-  value: mongoose.Schema.Types.Mixed
-}));
-
-// Initialize system configuration
-async function initializeSystemConfig() {
-  try {
-    const config = await SystemConfig.findOne({ key: 'classificationEnabled' });
-    if (!config) {
-      await SystemConfig.create({ key: 'classificationEnabled', value: true });
+// Initialize system configuration once MongoDB is connected
+function initializeSystemConfig() {
+  mongoose.connection.once('open', async () => {
+    try {
+      const config = await SystemConfig.findOne({ key: 'classificationEnabled' });
+      if (!config) {
+        await new SystemConfig({
+          key: 'classificationEnabled',
+          value: true,
+          description: 'Controls whether the classification system is enabled'
+        }).save();
+        console.log('Classification system config initialized');
+      }
+    } catch (error) {
+      console.error('Error initializing system config:', error);
     }
-  } catch (error) {
-    console.error('Error initializing system config:', error);
-  }
+  });
 }
 initializeSystemConfig();
 
@@ -85,6 +87,71 @@ exports.toggleClassification = async (req, res) => {
     } catch (error) {
         console.error('Error toggling classification:', error);
         res.status(500).json({ error: 'Failed to toggle classification' });
+    }
+};
+
+// Assign doctor to patient
+exports.assignDoctorToPatient = async (req, res) => {
+    try {
+        const { doctorId, patientId } = req.body;
+        
+        if (!doctorId || !patientId) {
+            return res.status(400).json({ error: 'Doctor ID and Patient ID are required' });
+        }
+        
+        // Verify doctor exists and is a doctor
+        const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
+        if (!doctor) {
+            return res.status(404).json({ error: 'Doctor not found' });
+        }
+        
+        // Verify patient exists and is a patient
+        const patient = await User.findOne({ _id: patientId, role: 'patient' });
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found' });
+        }
+        
+        // Update patient with assigned doctor
+        patient.assignedDoctor = doctorId;
+        await patient.save();
+        
+        // Add patient to doctor's assigned patients
+        if (!doctor.assignedPatients) {
+            doctor.assignedPatients = [];
+        }
+        
+        if (!doctor.assignedPatients.includes(patientId)) {
+            doctor.assignedPatients.push(patientId);
+            await doctor.save();
+        }
+        
+        // Send email notification to patient and doctor
+        const emailService = require('../utils/emailService');
+        try {
+            await emailService.sendDoctorAssignmentEmail(
+                patient.email,
+                patient.name,
+                doctor.name
+            );
+        } catch (emailError) {
+            console.error('Failed to send doctor assignment email:', emailError);
+        }
+        
+        res.json({
+            success: true,
+            message: 'Doctor assigned to patient successfully',
+            patient: {
+                id: patient._id,
+                name: patient.name,
+                assignedDoctor: {
+                    id: doctor._id,
+                    name: doctor.name
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error assigning doctor to patient:', error);
+        res.status(500).json({ error: 'Failed to assign doctor to patient' });
     }
 };
 

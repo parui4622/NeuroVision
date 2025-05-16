@@ -7,6 +7,7 @@ import DoctorDashboard from "./StatelessComponents/DoctorDashboard/DoctorDashboa
 import ForgotPassword from "./StatelessComponents/Login/ForgotPassword";
 import UserLogin from "./StatelessComponents/Login/userLogin";
 import UserSignUp from "./StatelessComponents/User/userSignUp";
+import VerifyOtp from "./StatelessComponents/User/verifyOtp";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/login" element={<UserLogin />} />
           <Route path="/signup" element={<UserSignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
           
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['patient']} />} />

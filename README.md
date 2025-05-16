@@ -1,4 +1,3 @@
-
 # 🧠 NeuroVision: Alzheimer's Detection System
 
 A modern web-based application for early detection and monitoring of Alzheimer's disease using deep learning and medical imaging analysis.
@@ -7,11 +6,15 @@ A modern web-based application for early detection and monitoring of Alzheimer's
 
 ## 🌟 Latest Updates
 
-- **Patient Serial Numbers**: Each patient now receives a unique serial number (format: PAT-YYYYMMDD-XXXX)
-- **Multiple Users per Email**: The system now allows multiple patient accounts to share the same email address
-- **Enhanced Password Recovery**: Improved forgot password flow with persistent access
-- **Docker Containerization**: Complete Docker setup for easy deployment
-- **Admin Management Scripts**: Added tools for admin user creation and password reset
+- **Duplicate Emails Allowed**: Multiple users can now register with the same email address (accounts are uniquely identified by userId).
+- **Simplified Doctor Signup**: Doctor registration now only requires name, email, and password—no specialty or manual verification needed.
+- **OTP Email Verification for All**: All users (doctor, patient, admin) must verify their email via OTP before accessing their dashboard.
+- **Role-based Redirects**: After OTP verification, users are redirected to the correct dashboard based on backend-verified role.
+- **Resend OTP Feature**: Users can request a new OTP if needed during verification.
+- **All Business Logic in Backend**: Role, verification, and redirect logic are now handled server-side for security and consistency.
+- **Admin Management Scripts**: Tools for admin user creation, password reset, and admin reset included.
+- **Patient Serial Numbers**: Each patient receives a unique serial number (format: PAT-YYYYMMDD-XXXX).
+- **Docker Containerization**: Complete Docker setup for easy deployment.
 
 ## Table of Contents
 
@@ -38,8 +41,7 @@ This comprehensive full-stack application implements an AI-powered Alzheimer's d
 - View results across classification categories:
   - AD: Alzheimer's Disease
   - CN: Cognitively Normal
-  - EMCI: Early Mild Cognitive Impairment
-  - LMCI: Late Mild Cognitive Impairment
+  - MCI: Mild Cognitive Impairment
 
 ## 🚀 Tech Stack
 
@@ -65,6 +67,9 @@ This comprehensive full-stack application implements an AI-powered Alzheimer's d
 - **Patient Registration**: Includes generation of unique patient serial numbers (PAT-YYYYMMDD-XXXX format)
 - **Enhanced Password Recovery**: Secure self-service password reset
 - **Multiple Users per Email**: Support for caregivers managing multiple patient accounts
+- **OTP Email Verification for All**: All users must verify their email via OTP before accessing their dashboard
+- **Role-based Redirects**: After OTP verification, users are redirected to the correct dashboard based on backend-verified role
+- **Resend OTP Feature**: Users can request a new OTP if needed during verification
 
 ### For Doctors
 - Secure dashboard for patient management
@@ -72,6 +77,7 @@ This comprehensive full-stack application implements an AI-powered Alzheimer's d
 - Patient history tracking
 - Diagnostic report generation
 - Real-time AI analysis results
+- **Simplified Signup**: Only name, email, and password required; no specialty or manual verification
 
 ### For Patients
 - Personal health dashboard with serial number display
@@ -82,7 +88,6 @@ This comprehensive full-stack application implements an AI-powered Alzheimer's d
 
 ### For Administrators
 - User management system with patient serial number support
-- Doctor verification process
 - System monitoring tools
 - Analytics dashboard
 - Security audit logs
@@ -317,6 +322,13 @@ The system implements a comprehensive authentication system supporting multiple 
 - System supports multiple accounts sharing one email address
 - Each account maintains distinct credentials and access rights
 - Particularly useful for caregivers managing multiple patient accounts
+- **All user lookups and verification now use userId for security**
+
+#### OTP Email Verification
+- All users (doctor, patient, admin) must verify their email via OTP before accessing their dashboard
+- After OTP verification, backend returns the user’s true role for correct dashboard redirect
+- "Resend OTP" feature available on verification page
+- All business logic (role, verification, redirect) is handled in the backend for security and consistency
 
 ## 📚 Documentation
 

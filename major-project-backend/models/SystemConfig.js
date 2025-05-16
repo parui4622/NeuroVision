@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-const systemConfigSchema = new mongoose.Schema({
+// Check if the model already exists to avoid the OverwriteModelError
+const SystemConfig = mongoose.models.SystemConfig || mongoose.model('SystemConfig', new mongoose.Schema({
     key: {
         type: String,
         required: true,
@@ -21,8 +22,6 @@ const systemConfigSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }
-});
-
-const SystemConfig = mongoose.model('SystemConfig', systemConfigSchema);
+}));
 
 module.exports = SystemConfig;

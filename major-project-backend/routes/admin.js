@@ -6,7 +6,8 @@ const {
   getPatients,
   deleteUser,
   toggleClassification,
-  getClassificationState
+  getClassificationState,
+  assignDoctorToPatient
 } = require('../controllers/adminController');
 
 // Debug middleware
@@ -21,22 +22,25 @@ router.use((req, res, next) => {
     next();
 });
 
-// Apply admin authentication to all routes
-router.use(adminAuth);
+// Define authentication middleware for all routes
+const authenticate = adminAuth;
 
 // Get all doctors
-router.get('/doctors', getDoctors);
+router.get('/doctors', authenticate, getDoctors);
 
 // Get all patients
-router.get('/patients', getPatients);
+router.get('/patients', authenticate, getPatients);
 
 // Delete a user (doctor or patient)
-router.delete('/:userType/:id', deleteUser);
+router.delete('/:userType/:id', authenticate, deleteUser);
 
 // Toggle classification system
-router.post('/toggle-classification', toggleClassification);
+router.post('/toggle-classification', authenticate, toggleClassification);
 
 // Get classification system state
-router.get('/classification-state', getClassificationState);
+router.get('/classification-state', authenticate, getClassificationState);
+
+// Assign doctor to patient
+router.post('/assign-doctor', authenticate, assignDoctorToPatient);
 
 module.exports = router;

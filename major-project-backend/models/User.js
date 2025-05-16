@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { type: String, required: true }, // Removed unique constraint
+    email: { type: String, required: true }, // No unique constraint
     password: { type: String, required: true },
     role: {
         type: String,
@@ -10,15 +10,16 @@ const userSchema = new mongoose.Schema({
         default: 'patient',
         required: true
     },
-    // Doctor specific fields
+    // Email verification
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationOTP: { type: String },
+    otpExpiry: { type: Date },
+    
+    // Doctor specific fields - simplified registration
     doctorInfo: {
-        licenseNumber: { type: String },
-        specialty: { type: String },
-        hospital: { type: String },
-        yearsOfExperience: { type: Number },
-        education: { type: String },
-        isVerified: { type: Boolean, default: false }
+        isVerified: { type: Boolean, default: true } // Auto-verified doctors
     },
+    
     // Patient specific fields
     patientInfo: {
         dateOfBirth: { type: Date },
@@ -26,6 +27,19 @@ const userSchema = new mongoose.Schema({
         medicalHistory: [String],
         serial: { type: String, unique: true, sparse: true }
     },
+    
+    // Doctor assignment for patients
+    assignedDoctor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    
+    // For doctors - array of patients assigned to this doctor
+    assignedPatients: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    
     // Google Auth fields
     googleId: { type: String },
     picture: { type: String },
@@ -40,10 +54,6 @@ const userSchema = new mongoose.Schema({
     assignedDoctor: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    },
-    specialty: {
-        type: String,
-        required: function() { return this.role === 'doctor'; }
     },
     hospital: String,
     lastScanDate: Date,
@@ -65,20 +75,6 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ role: 1, status: 1 });
 userSchema.index({ role: 1, createdAt: -1 });
 userSchema.index({ 'doctorInfo.isVerified': 1, role: 1 });
-
-// Use post-init hook to ensure collection is available before dropping index
-userSchema.post('init', function() {
-  const User = mongoose.model('User');
-  if (User.collection) {
-    User.collection.dropIndex('email_1', function(err, result) {
-      if (err && err.code !== 27) {
-        console.log('Error dropping email index:', err);
-      } else {
-        console.log('Successfully ensured email is not unique');
-      }
-    });
-  }
-});
 
 // Virtual field to help in MongoDB Compass visualization
 userSchema.virtual('userType').get(function() {

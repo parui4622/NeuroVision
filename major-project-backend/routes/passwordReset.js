@@ -3,7 +3,7 @@ const router = express.Router();
 const { requestPasswordReset, resetPassword, verifyUser } = require('../controllers/passwordResetController');
 const { resetAttemptLimiter } = require('../middleware/rateLimit');
 const { validateResetRequest, validatePasswordReset } = require('../middleware/validation');
-const { sessionAuth } = require('../middleware/sessionAuth');
+const sessionAuth = require('../middleware/sessionAuth');
 
 // Apply rate limiting to all password reset routes
 router.use(resetAttemptLimiter);
