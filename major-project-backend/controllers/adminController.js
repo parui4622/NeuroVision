@@ -45,14 +45,25 @@ exports.getPatients = async (req, res) => {
 // Delete user
 exports.deleteUser = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const deletedUser = await User.findByIdAndDelete(userId);
+        const { userType, id } = req.params;
+        console.log(`Attempting to delete user: type=${userType}, id=${id}`);
+        
+        const deletedUser = await User.findByIdAndDelete(id);
+        console.log('Delete result:', deletedUser ? 'User found and deleted' : 'No user found');
         
         if (!deletedUser) {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        res.json({ message: 'User deleted successfully' });
+        res.json({ 
+            message: 'User deleted successfully',
+            deletedUser: {
+                id: deletedUser._id,
+                name: deletedUser.name,
+                email: deletedUser.email,
+                role: deletedUser.role
+            }
+        });
     } catch (error) {
         console.error('Error deleting user:', error);
         res.status(500).json({ error: 'Failed to delete user' });

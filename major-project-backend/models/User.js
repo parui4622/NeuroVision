@@ -66,12 +66,17 @@ userSchema.index({ role: 1, status: 1 });
 userSchema.index({ role: 1, createdAt: -1 });
 userSchema.index({ 'doctorInfo.isVerified': 1, role: 1 });
 
-// Check if any index exists on email field and remove it
-userSchema.collection.dropIndex('email_1', function(err, result) {
-  if (err && err.code !== 27) {
-    console.log('Error dropping email index:', err);
-  } else {
-    console.log('Successfully ensured email is not unique');
+// Use post-init hook to ensure collection is available before dropping index
+userSchema.post('init', function() {
+  const User = mongoose.model('User');
+  if (User.collection) {
+    User.collection.dropIndex('email_1', function(err, result) {
+      if (err && err.code !== 27) {
+        console.log('Error dropping email index:', err);
+      } else {
+        console.log('Successfully ensured email is not unique');
+      }
+    });
   }
 });
 
