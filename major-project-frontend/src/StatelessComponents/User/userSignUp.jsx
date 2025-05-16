@@ -271,7 +271,6 @@ const UserSignUp = () => {
           )}
 
           <button type="submit" className="signup-button">Sign Up</button>
-          
           {form.role === 'patient' && (
             <button 
               type="button" 

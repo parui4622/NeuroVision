@@ -1,7 +1,8 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Aurora from "../../StatefullComponents/Aurora/Aurora.jsx";
+import Ballpit from "../../StatefullComponents/BallPitBg/BallPit.jsx";
+import Button from "../../StatefullComponents/ButtonLogin/LoginButton.jsx";
 import "./login.css";
 
 const UserLogin = () => {
@@ -104,16 +105,25 @@ const UserLogin = () => {
 
   return (
     <div className="login-page">
-      <Aurora />
-      <div className="login-card">
-        <h2>Login</h2>
-        {error && <p className="error-message">{error}</p>}
+      <Ballpit
+        count={200}
+        gravity={0.7}
+        friction={0.8}
+        wallBounce={0.95}
+        followCursor={true}
+        colors={[0x1a2980, 0x26d0ce, 0xffffff]}
+        style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0}}
+      />
+      <div className="login-card animated-card">
+        <h2 className="animated-text">Login</h2>
+        {error && <p className="error-message animated-error">{error}</p>}
         <form onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Enter Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="animated-input"
           />
           <div className="password-input-container">
             <input
@@ -121,6 +131,7 @@ const UserLogin = () => {
               placeholder="Enter Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="animated-input"
             />
             <button 
               type="button"
@@ -133,19 +144,20 @@ const UserLogin = () => {
           <select 
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="role-select"
+            className="role-select animated-input"
           >
             <option value="patient">Patient</option>
             <option value="doctor">Doctor</option>
             <option value="admin">Admin</option>
           </select>
-          <button type="submit">Login</button>
-          
+          <div className="login-btn-container">
+            <Button type="submit" />
+          </div>
           {/* Developer bypass button - TO BE REMOVED IN PRODUCTION */}
           <button 
             type="button" 
             onClick={handleDeveloperAccess}
-            className="developer-button"
+            className="developer-button animated-btn"
           >
             Developer Access - {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
           </button>
