@@ -87,7 +87,9 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    navigate('/');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/logout');
   };
 
   return (

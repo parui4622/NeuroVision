@@ -144,7 +144,7 @@ const Dashboard = () => {
     localStorage.removeItem('mriImage');
     localStorage.removeItem('mriImageName');
     localStorage.removeItem('mriUploadDate');
-    navigate('/login');
+    navigate('/logout');
   };
 
   return (

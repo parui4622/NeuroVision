@@ -10,7 +10,7 @@ const VerifyOtp = () => {
   const navigate = useNavigate();
   const userId = location.state?.userId;
   const email = location.state?.email;
-  const role = location.state?.role;
+  const selectedRole = location.state?.role; // role selected during signup
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,10 +31,11 @@ const VerifyOtp = () => {
       if (response.ok) {
         setSuccess("Email verified! Redirecting...");
         setTimeout(() => {
-          const verifiedRole = data.role;
-          if (verifiedRole === 'doctor') navigate('/doctor');
-          else if (verifiedRole === 'patient') navigate('/dashboard');
-          else if (verifiedRole === 'admin') navigate('/admin');
+          // Use the role selected during signup if available, else fallback to backend-verified role
+          const roleToRedirect = selectedRole || data.role;
+          if (roleToRedirect === 'doctor') navigate('/doctor');
+          else if (roleToRedirect === 'patient') navigate('/dashboard');
+          else if (roleToRedirect === 'admin') navigate('/admin');
           else navigate('/');
         }, 1500);
       } else {

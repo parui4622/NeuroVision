@@ -6,6 +6,7 @@ import Dashboard from "./StatelessComponents/Dashboard/dashboard";
 import DoctorDashboard from "./StatelessComponents/DoctorDashboard/DoctorDashboard";
 import ForgotPassword from "./StatelessComponents/Login/ForgotPassword";
 import UserLogin from "./StatelessComponents/Login/userLogin";
+import Logout from "./StatelessComponents/Logout/Logout";
 import UserSignUp from "./StatelessComponents/User/userSignUp";
 import VerifyOtp from "./StatelessComponents/User/verifyOtp";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -19,6 +20,7 @@ function App() {
           <Route path="/signup" element={<UserSignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/logout" element={<Logout />} />
           
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['patient']} />} />

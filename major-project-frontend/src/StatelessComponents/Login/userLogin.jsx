@@ -90,33 +90,6 @@ const UserLogin = () => {
     }
   };
 
-  // Developer bypass function
-  const handleDeveloperAccess = () => {
-    const tempUser = {
-      _id: 'dev-user-id',
-      name: 'Developer Access',
-      role: role,
-      email: 'dev@example.com'
-    };
-    
-    localStorage.setItem('token', 'dev-bypass-token');
-    localStorage.setItem('user', JSON.stringify(tempUser));
-    
-    switch (role) {
-      case 'admin':
-        navigate('/admin');
-        break;
-      case 'doctor':
-        navigate('/doctor');
-        break;
-      case 'patient':
-        navigate('/dashboard');
-        break;
-      default:
-        navigate('/login');
-    }
-  };
-
   return (
     <div className="login-page">
       <Aurora />      <div className="login-card">
@@ -177,15 +150,6 @@ const UserLogin = () => {
             <option value="admin">Admin</option>
           </select>
           <button type="submit">Login</button>
-          
-          {/* Developer bypass button - TO BE REMOVED IN PRODUCTION */}
-          <button 
-            type="button" 
-            onClick={handleDeveloperAccess}
-            className="developer-button"
-          >
-            Developer Access - {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
-          </button>
         </form>
         <div style={{ marginTop: '12px', textAlign: 'center' }}>
           <button

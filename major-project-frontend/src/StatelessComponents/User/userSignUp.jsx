@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import SignupLoader from "../../StatefullComponents/SignupLoader/SignupLoader";
 import "./userSignUp.css";
 
 const UserSignUp = () => {  
@@ -19,6 +20,7 @@ const UserSignUp = () => {
       gender: ""
     }
   });
+  const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
 
@@ -156,6 +158,7 @@ const UserSignUp = () => {
       }
       return;
     }
+    setLoading(true);
     try {
       const formattedForm = {
         ...form,
@@ -182,13 +185,18 @@ const UserSignUp = () => {
       const data = await response.json();
       console.log('Response data:', data);      
       if (response.ok) {
-        // Always require OTP verification after signup
-        navigate('/verify-otp', { state: { email: form.email, userId: data.userId, role: form.role } });
+        // Show loader for 1s before OTP page
+        setTimeout(() => {
+          setLoading(false);
+          navigate('/verify-otp', { state: { email: form.email, userId: data.userId, role: form.role } });
+        }, 1000);
         return;
       } else {
+        setLoading(false);
         throw new Error(data.error || 'Failed to register');
       }
     } catch (error) {
+      setLoading(false);
       console.error('Registration error:', error);
       alert(error.message || 'An error occurred during registration');
     }
@@ -198,6 +206,16 @@ const UserSignUp = () => {
     <div className="signup-page">
       <div className="signup-card">
         <h2>Create Account</h2>
+        {loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 220 }}>
+            <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <SignupLoader />
+            </div>
+            <div style={{marginTop: 24, fontWeight: 500, color: '#4a00e0', fontSize: 18}}>Creating your account...</div>
+            <div style={{marginTop: 8, color: '#888', fontSize: 14}}>Please wait, do not refresh the page.</div>
+          </div>
+        )}
+        {!loading && (
         <form onSubmit={handleSubmit}>
           <select
             name="role"
@@ -346,6 +364,7 @@ const UserSignUp = () => {
             </button>
           )}
         </form>
+        )}
       </div>
     </div>
   );
