@@ -4,440 +4,178 @@ A modern web-based application for early detection and monitoring of Alzheimer's
 
 ![NeuroVision](major-project-frontend/src/assets/brain-2.png)
 
-## 🚀 Latest Updates (August 8, 2025)
+---
 
-- Admin: Change Password added (API + UI) with clearer validation and status messages.
-- Admin Dashboard: Classification toggle and state endpoints available (`/api/admin/toggle-classification`, `/api/admin/classification-state`).
-- Admin Data: Dashboard lists available at `/api/admin/doctors`, `/api/admin/patients`, `/api/admin/admins` (and mapped to `/api/admin/dashboard/*` for frontend compatibility).
-- Prediction: More resilient parsing of Python stdout (parse last valid JSON) and improved stderr logging for easier debugging.
-- Frontend Security: Console logs suppressed in production builds to reduce exposure of payloads and URLs; removed accidental client-side logging in admin views.
+## 🚀 Recent Updates (2025-2026)
+- Admin: Change Password feature added (API + UI) with improved validation and status messages.
+- Admin Dashboard: Classification toggle and state endpoints available.
+- Admin Data: Dashboard lists for doctors, patients, and admins.
+- Prediction: Improved parsing of Python stdout and error logging.
+- Frontend Security: Console logs suppressed in production builds.
+- Duplicate Emails Allowed: Multiple users can register with the same email address (unique by userId).
+- Simplified Doctor Signup: Only name, email, and password required.
+- OTP Email Verification: All users must verify their email via OTP before dashboard access.
+- Role-based Redirects: After OTP verification, users are redirected to the correct dashboard based on backend-verified role.
+- Resend OTP Feature: Users can request a new OTP during verification.
+- All Business Logic in Backend: Role, verification, and redirect logic handled server-side.
+- Admin Management Scripts: Tools for admin user creation and password reset included.
+- Patient Serial Numbers: Each patient receives a unique serial number.
 
-### Previous Updates
-- **Duplicate Emails Allowed**: Multiple users can now register with the same email address (accounts are uniquely identified by userId).
-- **Simplified Doctor Signup**: Doctor registration now only requires name, email, and password—no specialty or manual verification needed.
-- **OTP Email Verification for All**: All users (doctor, patient, admin) must verify their email via OTP before accessing their dashboard.
-- **Role-based Redirects**: After OTP verification, users are redirected to the correct dashboard based on backend-verified role.
-- **Resend OTP Feature**: Users can request a new OTP if needed during verification.
-- **All Business Logic in Backend**: Role, verification, and redirect logic are now handled server-side for security and consistency.
-- **Admin Management Scripts**: Tools for admin user creation, password reset, and admin reset included.
-- **Patient Serial Numbers**: Each patient receives a unique serial number (format: PAT-YYYYMMDD-XXXX).
-- **Docker Containerization**: Complete Docker setup for easy deployment.
+---
 
-## Table of Contents
-
+## 📖 Table of Contents
 - [Project Overview](#project-overview)
-- [Tech Stack](#-tech-stack)
-- [Features](#-key-features)
-- [Architecture](#-architecture)
-- [Installation & Setup](#-manual-installation)
-- [Docker Deployment](#-docker-deployment)
-- [API Documentation](#-api-documentation)
-- [Authentication](#-authentication)
-- [Patient Serial Number System](#-patient-serial-number-system)
-- [Admin Management](#-user-management)
-- [Documentation](#-documentation)
-- [License](#-license)
+- [Tech Stack](#tech-stack)
+- [Key Features](#key-features)
+- [Setup & Installation](#setup--installation)
+- [Running the Application](#running-the-application)
+- [Further Documentation](#further-documentation)
+- [License](#license)
+- [Contact](#contact)
+
+---
 
 ## Project Overview
+This full-stack application enables:
+- Upload and analysis of brain MRI scans
+- Real-time AI-powered analysis
+- Patient progress tracking
+- Secure management of medical histories
+- Role-based dashboards for patients, doctors, and admins
 
-This comprehensive full-stack application implements an AI-powered Alzheimer's detection system that enables healthcare professionals and patients to:
-- Upload and analyze brain MRI scans
-- Get real-time AI-powered analysis
-- Track patient progress over time
-- Manage medical histories securely
-- View results across classification categories:
-  - AD: Alzheimer's Disease
-  - CN: Cognitively Normal
-  - MCI: Mild Cognitive Impairment
+---
 
-## 🚀 Tech Stack
+## 🛠 Tech Stack
+**Frontend:**
+- React 18 (Vite)
+- React Router
+- Lucide React (icons)
+- Modern CSS3
+- JWT Authentication
 
-### Frontend
-- **React 18** with Vite - Modern, fast build tool and development server
-- **React Router** - Client-side routing and navigation
-- **Lucide React** - Beautiful, consistent icons
-- **Custom Components** - Including Aurora for UI effects
-- **Modern CSS3** - Flexible and responsive styling
-- **JWT Authentication** - Secure user sessions
+**Backend:**
+- Node.js & Express.js
+- MongoDB & Mongoose
+- JWT & bcrypt
+- PyTorch & Python (AI model)
+- CORS & Helmet
 
-### Backend
-- **Node.js & Express.js** - Fast, unopinionated web framework
-- **MongoDB & Mongoose** - Flexible, scalable database
-- **JWT & bcrypt** - Secure authentication and password hashing
-- **PyTorch & Python** - Powerful AI model integration
-- **CORS & Helmet** - Enhanced API security
+---
 
-## 🛠️ Key Features
+## ✨ Key Features
+- Multi-role authentication (patient, doctor, admin)
+- OTP email verification for all users
+- Secure password reset and management
+- Unique patient serial numbers
+- Admin management scripts
+- AI-powered MRI scan analysis
+- Role-based dashboards
 
-### User Management
-- **Multi-role Authentication**: Support for patients, doctors, and administrators
-- **Patient Registration**: Includes generation of unique patient serial numbers (PAT-YYYYMMDD-XXXX format)
-- **Enhanced Password Recovery**: Secure self-service password reset
-- **Multiple Users per Email**: Support for caregivers managing multiple patient accounts
-- **OTP Email Verification for All**: All users must verify their email via OTP before accessing their dashboard
-- **Role-based Redirects**: After OTP verification, users are redirected to the correct dashboard based on backend-verified role
-- **Resend OTP Feature**: Users can request a new OTP if needed during verification
+---
 
-### For Doctors
-- Secure dashboard for patient management
-- MRI scan upload and analysis
-- Patient history tracking
-- Diagnostic report generation
-- Real-time AI analysis results
-- **Simplified Signup**: Only name, email, and password required; no specialty or manual verification
-
-### For Patients
-- Personal health dashboard with serial number display
-- Medical history access
-- Scan result visualization
-- Secure doctor communication
-- Progress tracking
-
-### For Administrators
-- User management system with patient serial number support
-- System monitoring tools
-- Analytics dashboard
-- Security audit logs
-- Admin management scripts for user creation and password reset
-
-## 🐳 Docker Deployment
+## 🖥️ Setup & Installation
 
 ### Prerequisites
-- Docker and Docker Compose installed
+- Node.js (v18 or higher)
+- npm (comes with Node.js)
+- Python (v3.8 or higher)
+- pip (Python package manager)
+- MongoDB (local or cloud instance)
 
-### Quick Start
-
-1. Clone the repository:
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/[your-username]/neurovision.git
 cd neurovision
 ```
 
-2. Create a `.env` file with required variables:
-```
-MONGO_USERNAME=[your_username]
-MONGO_PASSWORD=[secure_password]
-JWT_SECRET=[your_jwt_secret]
-NODE_ENV=production
-```
-
-3. Start the containers:
+### 2. Install Dependencies
+You can use the provided setup script (Windows):
 ```bash
-docker-compose up -d
+setup.cmd
 ```
-
-4. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-
-### Container Configuration
-
-The project uses three main containers:
-1. **MongoDB**: Database server
-2. **Backend**: Node.js/Express API server
-3. **Frontend**: React application with Nginx
-
-The containers are orchestrated using Docker Compose as defined in `docker-compose.yml`:
-
-```yaml
-services:
-  mongo:
-    image: mongo:6
-    container_name: mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
-    restart: unless-stopped
-
-  backend:
-    build: ./major-project-backend
-    container_name: neurovision_backend
-    ports:
-      - "5000:5000"
-    depends_on:
-      - mongo
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - MONGODB_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo:27017/neurovision?authSource=admin
-      - JWT_SECRET=${JWT_SECRET}
-    restart: unless-stopped
-
-  frontend:
-    build: ./major-project-frontend
-    container_name: neurovision_frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-```
-
-For more details, see [Docker Documentation](documentation/docker-documentation.md).
-
-## 🚀 Manual Installation
-
-### Prerequisites
-- Node.js (v18 or higher)
-- MongoDB (v5 or higher)
-- Python (v3.8 or higher)
-- npm or yarn package manager
-
-### Installation
-
-1. Clone the repository:
+Or, install manually:
 ```bash
-git clone https://github.com/[your-username]/neurovision.git
-```
+# Backend dependencies
+cd major-project-backend
+npm install
+cd ..
 
-2. Frontend Setup:
-```bash
+# Frontend dependencies
 cd major-project-frontend
 npm install
-```
+cd ..
 
-3. Backend Setup:
-```bash
-cd ../major-project-backend
-npm install
-```
-
-4. Python Dependencies:
-```bash
-cd python
+# Python AI dependencies
+cd major-project-backend/python
 pip install -r requirements.txt
+cd ../../..
 ```
 
-5. Environment Setup:
-Create a `.env` file in the backend directory:
-```env
-MONGODB_URI=mongodb://localhost:27017/neurovision
-JWT_SECRET=[your-secret-key]
-PORT=5000
-```
+### 3. Environment Configuration
+- **Backend:**
+  - Copy or create `major-project-backend/.env` with the following (replace with your values):
+    ```env
+    MONGODB_URI=mongodb://localhost:27017/neurovision_database
+    JWT_SECRET=REPLACE_WITH_SECURE_RANDOM_SECRET
+    EMAIL_USER=your-email@gmail.com
+    EMAIL_PASS=your-gmail-app-password
+    FRONTEND_URL=http://localhost:5173
+    PORT=5000
+    ```
+- **Frontend:**
+  - Copy or create `major-project-frontend/.env`:
+    ```env
+    VITE_API_URL=http://localhost:5000
+    BACKEND_URL=http://localhost:5000
+    ```
 
-### Running the Application
+> **Note:** Never commit your `.env` files or secrets to version control.
 
-1. Start MongoDB:
-```bash
-mongod
-```
+---
 
-2. Start Backend Server:
+## ▶️ Running the Application
+
+### 1. Start MongoDB
+Make sure MongoDB is running locally or use a cloud instance (e.g., MongoDB Atlas).
+
+### 2. Start Backend Server
 ```bash
 cd major-project-backend
 npm run dev
 ```
 
-3. Start Frontend Development Server:
+### 3. Start Frontend Development Server
 ```bash
 cd major-project-frontend
 npm run dev
 ```
 
-## 📊 API Documentation
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5000
 
-### Base URL
-```
-http://localhost:5000/api
-```
+---
 
-### Authentication Endpoints
+## 📚 Further Documentation
+- For API details, authentication flows, Docker setup, and more, see the `documentation/` folder:
+  - [API Documentation](documentation/api-documentation.md)
+  - [Authentication](documentation/authentication-documentation.md)
+  - [Docker Setup](documentation/docker-documentation.md)
+  - [Patient Serial System](documentation/patient-serial-documentation.md)
+  - [Project Architecture](documentation/project-documentation.md)
+  - [Implementation Summary](documentation/implementation-summary.md)
 
-#### Register User
-- **URL**: `/auth/signup`
-- **Method**: `POST`
-- **Auth Required**: No
-- **Description**: Creates a new user account with role-specific data
-
-#### Login
-- **URL**: `/auth/login`
-- **Method**: `POST`
-- **Auth Required**: No
-- **Description**: Authenticates a user and returns a JWT token
-
-#### Password Reset
-- **URL**: `/password-reset/request`
-- **Method**: `POST`
-- **Auth Required**: No
-- **Description**: Initiates password reset workflow via email
-
-### User Endpoints
-
-#### Get Current User
-- **URL**: `/users/me`
-- **Method**: `GET`
-- **Auth Required**: Yes
-- **Description**: Returns the current user's profile data
-
-#### Update User Profile
-- **URL**: `/users/me`
-- **Method**: `PUT`
-- **Auth Required**: Yes
-- **Description**: Updates user profile information
-
-### MRI Scan Endpoints
-
-#### Upload Scan
-- **URL**: `/predict/upload`
-- **Method**: `POST`
-- **Auth Required**: Yes
-- **Description**: Uploads and processes a brain MRI scan
-
-For the complete API documentation, see the [detailed API docs](documentation/api-documentation.md).
-
-## 👥 User Management
-
-### Creating an Admin User
-
-```bash
-cd major-project-backend
-node createAdmin.js --email [admin@example.com] --password [securepassword] --name "[Admin User]"
-```
-
-Follow the prompts to create a new admin user.
-
-### Resetting Admin Password
-
-```bash
-cd major-project-backend
-node resetAdmin.js --email [admin@example.com] --newPassword [newSecurePassword]
-```
-
-Follow the prompts to reset an admin's password.
-
-### Authentication
-
-The system implements a comprehensive authentication system supporting multiple user roles:
-
-#### User Registration
-1. User provides required information based on their role
-2. System validates input and creates appropriate user record
-3. For patients, a unique serial number is automatically generated
-4. JWT token is issued upon successful registration
-
-#### Password Reset Flow
-1. User requests password reset via "Forgot Password?" button
-2. System generates secure token and sends reset link via email
-3. User sets new password through reset form
-4. System verifies token validity and updates password securely
-
-#### Multiple Users per Email
-- System supports multiple accounts sharing one email address
-- Each account maintains distinct credentials and access rights
-- Particularly useful for caregivers managing multiple patient accounts
-- **All user lookups and verification now use userId for security**
-
-#### OTP Email Verification
-- All users (doctor, patient, admin) must verify their email via OTP before accessing their dashboard
-- After OTP verification, backend returns the user’s true role for correct dashboard redirect
-- "Resend OTP" feature available on verification page
-- All business logic (role, verification, redirect) is handled in the backend for security and consistency
-
-## 📚 Documentation
-
-Comprehensive documentation is available in the [documentation](documentation/) directory:
-
-- [Project Documentation](documentation/project-documentation.md) - Complete overview of project architecture and features
-- [API Documentation](documentation/api-documentation.md) - Detailed guide to all API endpoints
-- [Authentication Documentation](documentation/authentication-documentation.md) - User registration and authentication flows
-- [Docker Documentation](documentation/docker-documentation.md) - Container setup and configuration
-- [Patient Serial Documentation](documentation/patient-serial-documentation.md) - Details on the patient serial number implementation
-- [Implementation Summary](documentation/implementation-summary.md) - Summary of recent changes and implementations
-
-## 🏗 Architecture
-
-The project follows a modern client-server architecture:
-
-1. **Frontend**: React-based single page application
-2. **Backend**: Node.js/Express.js REST API
-3. **Database**: MongoDB for data persistence
-4. **Analysis Engine**: Python-based deep learning model for MRI analysis
-5. **Container Support**: Docker-based deployment for all components
-
-## 🔒 Security Features
-
-- JWT-based authentication and authorization
-- Secure password hashing with bcrypt
-- MongoDB session management
-- Role-based access control (RBAC)
-- CORS protection
-- Request rate limiting
-- Secure file upload handling
-- XSS protection
-
-## 📋 Patient Serial Number System
-
-### Format and Generation
-- Each patient receives a unique serial number in the format: `PAT-YYYYMMDD-XXXX`
-  - `PAT-` - Fixed prefix identifying a patient record
-  - `YYYYMMDD` - Registration date in YYYYMMDD format
-  - `XXXX` - Random alphanumeric suffix (4 characters)
-- Example: `PAT-20250515-A4F2`
-
-### Technical Implementation
-```javascript
-function generatePatientSerial() {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
-  return `PAT-${date}-${rand}`;
-}
-```
-
-### Display
-- Serial numbers are displayed in the patient profile card
-- Visible in the admin dashboard patient list
-- Included in all patient-related reports and exports
-
-## 📱 Mobile Responsiveness
-
-The application is fully responsive and optimized for:
-- Desktop computers
-- Tablets
-- Mobile devices
-
-## 🚀 Getting Started
-
-### Using Convenience Scripts
-
-For quick startup, use the provided convenience script:
-
-```bash
-start-project.cmd
-```
-
-This script will:
-1. Start MongoDB server if needed
-2. Install any missing dependencies
-3. Start the backend server
-4. Start the frontend development server
-5. Open the application in your default browser
-
-### Clean-up
-
-To clean up test files and temporary data:
-
-```bash
-cleanup.cmd
-```
+---
 
 ## 📄 License
-
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
 
 ## 📞 Contact
-
 For any queries regarding this project, please contact:
 - Repository: [NeuroVision](https://github.com/parui4622/NeuroVision)
 - Owner: parui4622
 
 ---
 
-© 2025 NeuroVision Team. All rights reserved.
+© 2026 NeuroVision Team. All rights reserved.
