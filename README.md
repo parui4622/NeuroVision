@@ -174,7 +174,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## 📞 Contact
 For any queries regarding this project, please contact:
 - Repository: [NeuroVision](https://github.com/parui4622/NeuroVision)
-- Owner: parui4622
+- Owner: Sourabh Parui (saurav4622)
 
 ---
 
