@@ -14,12 +14,11 @@
 /* --- LOGIN CARD --- */
 .login-card {
   position: relative;
-  z-index: 2;
+  z-index: 10; /* Ensures card is above the bubbles */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Blue glass card to match background */
   background: linear-gradient(180deg, rgba(59,130,246,0.22), rgba(37,99,235,0.18)), rgba(10,16,30,0.35);
   border-radius: 18px;
   box-shadow: 0 16px 50px rgba(37,99,235,0.25);
@@ -62,9 +61,8 @@
   padding: 14px 16px;
   margin-bottom: 18px;
   border-radius: 8px;
-  /* High-contrast input: light field with dark text */
-  border: 2px solid rgba(126, 167, 255, 0.9); /* soft blue */
-  background: rgba(236, 244, 255, 0.95); /* light blue to match bg */
+  border: 2px solid rgba(126, 167, 255, 0.9); 
+  background: rgba(236, 244, 255, 0.95); 
   color: #0b1a2b;
   font-size: 1.05rem;
   outline: none;
@@ -72,7 +70,7 @@
   box-sizing: border-box;
 }
 .animated-input:focus {
-  border-color: #3b82f6; /* blue focus */
+  border-color: #3b82f6; 
   background: #f9fbff;
   box-shadow: 0 0 0 3px rgba(59,130,246,0.22);
 }
@@ -81,50 +79,44 @@
   opacity: 1;
 }
 
-/* --- PASSWORD TOGGLE --- */
+/* --- PASSWORD TOGGLE (Fixed) --- */
 .password-input-container {
   position: relative;
   width: 100%;
   margin-bottom: 18px;
+  display: block;
 }
-.password-input-container input { padding-right: 56px; }
-.password-input-container button {
-  background-color: transparent !important;
-  box-shadow: none !important;
+.password-input-container input { 
+  width: 100%;
+  padding-right: 45px !important; 
 }
 .password-toggle-btn {
   position: absolute;
-  right: 8px !important; 
-  top: 40% !important;  
+  right: 12px !important; 
+  top: 50% !important;  
   transform: translateY(-50%);
   background: transparent !important; 
   border: none;
   outline: none;
-  appearance: none;
-  -webkit-appearance: none;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  color: #000000 !important; /* force black eye icon */
-  padding: 8px; 
-  margin: 0;
-  line-height: 0;
-  z-index: 2;
+  color: #666 !important; 
+  padding: 0; 
+  z-index: 10;
   transition: all 0.2s ease;
-  backdrop-filter: blur(0);
 }
 .password-toggle-btn:hover {
-  color: #111111;
-  background: none;
+  color: #111 !important;
 }
 .password-toggle-btn:focus {
   outline: none;
-  background: none;
   box-shadow: none;
 }
-.password-toggle-btn:focus-visible { outline: none; box-shadow: none; }
-.password-toggle-btn svg { display: block; stroke: currentColor !important; color: #000 !important; fill: none; }
+.password-toggle-btn svg { 
+  display: block; 
+}
 
 /* --- ROLE SELECT --- */
 .role-select {
@@ -132,16 +124,13 @@
   margin-bottom: 14px;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 2px solid rgba(126, 167, 255, 0.9); /* soft blue */
-  background: rgba(236, 244, 255, 0.95); /* light blue */
+  border: 2px solid rgba(126, 167, 255, 0.9);
+  background: rgba(236, 244, 255, 0.95); 
   color: #0b1a2b;
   font-size: 1rem;
   outline: none;
   transition: border 0.2s;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   appearance: none;
-  /* black arrow for visibility */
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -149,18 +138,12 @@
   cursor: pointer;
 }
 .role-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.22); }
-
-/* Style for dropdown options - keep high visibility */
 .login-card select option {
-  background-color: #edf3ff; /* light blue */
+  background-color: #edf3ff; 
   color: #0b1a2b;
   padding: 12px;
 }
-
-/* Fix for Firefox and other browsers */
-.login-card select::-ms-expand {
-  display: none;
-}
+.login-card select::-ms-expand { display: none; }
 
 /* --- LOGIN OPTIONS --- */
 .login-options {
@@ -235,61 +218,4 @@
 }
 .signup-link span:hover {
   color: #fff;
-}
-
-/* =========================================
-   FIX 1: THE EYE BUTTON (PASSWORD TOGGLE)
-   ========================================= */
-
-/* Make the container relative so the button can float inside it */
-.password-input-container {
-  position: relative;
-  width: 100%;
-  display: block;
-}
-
-/* Add padding to the right so your password doesn't type OVER the eye icon */
-.password-input-container input {
-  width: 100%;
-  padding-right: 45px !important; 
-}
-
-/* Force the eye button to float perfectly centered on the right side */
-.password-toggle-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%); /* Perfectly vertically centers it */
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: #666; /* Adjust color to match your theme */
-  z-index: 10;
-}
-
-.password-toggle-btn:hover {
-  color: #111;
-}
-
-/* =========================================
-   FIX 2: BRING BACK THE BUBBLES
-   ========================================= */
-
-/* Force the page to take up the full screen and stay behind the card */
-.login-page {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  overflow: hidden; /* Stops the screen from scrolling if bubbles hit the edge */
-  background-color: transparent !important; /* Ensures it doesn't paint over the bubbles */
-}
-
-/* Make sure the login form stays on top of the bubbles */
-.login-card {
-  position: relative;
-  z-index: 10; 
 }
