@@ -21,11 +21,11 @@ const helmetMiddleware = (connectSrc) => helmet({
       "img-src": ["'self'", "data:"],
       "script-src": ["'self'"],
       "style-src": ["'self'", "'unsafe-inline'"],
-  "connect-src": connectSrc,
+      "connect-src": connectSrc,
     }
   },
-  crossOriginResourcePolicy: { policy: 'same-site' },
-  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Updated: allows Vercel to fetch resources
+  crossOriginOpenerPolicy: { policy: 'unsafe-none' },    // Updated: allows cross-origin interaction
   crossOriginEmbedderPolicy: false, // disable if not using COEP/COOP together
 });
 
@@ -55,20 +55,21 @@ if (process.env.NODE_ENV !== 'production') {
 const connectSrc = ["'self'", ...allowedOrigins];
 app.use(helmetMiddleware(connectSrc));
 
+// Apply CORS (Updated to stop crashing on Render health checks)
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no Origin header (e.g., mobile apps, Postman)
+    // Allow requests with no Origin header (e.g., Render health checks, mobile apps, Postman)
     if (!origin) {
-      // In production, block requests with no Origin header (CSRF on cookie-based auth)
-      if (process.env.NODE_ENV === 'production') {
-        return callback(new Error('Cross-origin requests without Origin are blocked'));
-      }
+      return callback(null, true); 
+    }
+    
+    // Check if the origin is in your allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Blocked by CORS:', origin);
-    }
+    
+    // Log the blocked origin for easy debugging in the future
+    console.warn(`Blocked by CORS: Origin ${origin} is not allowed.`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -76,6 +77,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 204,
 }));
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -93,6 +95,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/predict', predictRoutes);
