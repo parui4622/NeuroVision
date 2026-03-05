@@ -1,14 +1,15 @@
 import axios from "axios";
 import { UserCircle2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../StatefullComponents/DashboardButton/Button";
 import DateCalendarValue from "../../StatefullComponents/DateCalender/dateCalender";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import "./dashboard.css";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [prediction, setPrediction] = useState(null);
@@ -19,11 +20,18 @@ const Dashboard = () => {
   const [appointmentsError, setAppointmentsError] = useState("");
   const reminderTimeout = useRef(null);
   const [reminder, setReminder] = useState("");
+  const imagePreviewUrl = useMemo(
+    () => (imageFile ? URL.createObjectURL(imageFile) : null),
+    [imageFile]
+  );
+  useEffect(() => () => {
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+  }, [imagePreviewUrl]);
+
   // Function to test connection to backend server
   const testBackendConnection = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:5000';
-      const response = await axios.get(`${apiUrl}/`);
+      const response = await axios.get(`${API_BASE_URL}/`);
       console.log('Backend server connection test:', response.data);
       return true;
     } catch (error) {
@@ -33,74 +41,63 @@ const Dashboard = () => {
   };
   
   useEffect(() => {
-    // Check for authentication
-    const token = localStorage.getItem('token');
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
 
-    if (!token || !storedUser) {
-      navigate('/login');
-      return;
-    }
-    
-    // Test backend connection on component mount
-    testBackendConnection()
-      .then(isConnected => {
-        if (!isConnected) {
-          setMessage("Warning: Could not connect to the backend server. Prediction features may not work.");
-          setMessageType("error");
-        }
-      });
-
-    // For developer access, allow any role to view the dashboard
     if (token === 'dev-bypass-token') {
       setUser(storedUser);
       return;
     }
 
-    // For regular access, verify user role
+    if (!storedUser?.role && !token) {
+      navigate('/login');
+      return;
+    }
+
     if (storedUser.role === 'admin') {
       navigate('/admin');
       return;
-    } else if (storedUser.role === 'doctor') {
+    }
+    if (storedUser.role === 'doctor') {
       navigate('/doctor');
       return;
     }
 
-    // Fetch the complete user data to ensure we have the patient serial
+    testBackendConnection().then((isConnected) => {
+      if (!isConnected) {
+        setMessage("Warning: Could not connect to the backend server. Prediction features may not work.");
+        setMessageType("error");
+      }
+    });
+
     const fetchUserData = async () => {
-      try {        const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:5000';
-        const response = await axios.get(`${apiUrl}/api/auth/validate-session`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/auth/validate-session`, {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-        
-        if (response.data && response.data.user) {
-          setUser(response.data.user);
-          // Update localStorage with complete user data including serial
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+        const fetchedUser = response.data?.user;
+        if (fetchedUser) {
+          setUser(fetchedUser);
+          localStorage.setItem('user', JSON.stringify(fetchedUser));
         } else {
           setUser(storedUser);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
-        setUser(storedUser);
+        navigate('/login');
       }
     };
 
-    fetchUserData();
-
-    // Fetch patient appointments
     const fetchAppointments = async () => {
       try {
         setAppointmentsLoading(true);
         setAppointmentsError("");
-        const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:5000';
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${apiUrl}/api/doctor/appointments/patient`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const response = await axios.get(`${API_BASE_URL}/api/doctor/appointments/patient`, {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-        setAppointments(response.data || []);
+        setAppointments(response.data?.appointments || []);
       } catch (err) {
         setAppointmentsError("Unable to fetch your appointments.");
         setAppointments([]);
@@ -108,6 +105,8 @@ const Dashboard = () => {
         setAppointmentsLoading(false);
       }
     };
+
+    fetchUserData();
     fetchAppointments();
   }, [navigate]);
 
@@ -152,178 +151,74 @@ const Dashboard = () => {
     };
   }, [appointments]);
 
-  const validateFile = (file) => {
-    const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
-    
-    if (!file) return false;
-    
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    return validExtensions.includes(fileExtension);
-  };
-
-  const handleFileChange = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (!file) {
-        setMessage("No file selected.");
-        setMessageType("error");
-        return;
+      setMessage("No file selected.");
+      setMessageType("error");
+      return;
     }
-
     if (!file.type.startsWith("image/")) {
-        setMessage("Please upload a valid image file.");
-        setMessageType("error");
-        return;
+      setMessage("Please upload a valid image file.");
+      setMessageType("error");
+      return;
     }
-
-    setSelectedFile(file);
+    setImageFile(file);
     setMessage("File selected successfully. Click 'Get Started' to proceed.");
     setMessageType("info");
-};
+    setPrediction(null);
+  };
 
   const handlePrediction = async () => {
-    if (!selectedFile) {
-        setMessage('Please select a file to upload.');
-        setMessageType('error');
-        return;
+    if (!imageFile) {
+      setMessage('Please select a file to upload.');
+      setMessageType('error');
+      return;
     }
 
     setIsLoading(true);
+    setMessage('Processing your image...');
+    setMessageType('info');
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('file', imageFile);
 
     try {
-        const predictionResponse = await axios.post(`${apiUrl}/api/predict`, formData);
-        if (predictionResponse.data && predictionResponse.data.prediction) {
-            setPrediction(predictionResponse.data.prediction);
-            setMessage('Prediction successful!');
-            setMessageType('success');
-        } else {
-            throw new Error('Invalid response format');
-        }
-    } catch (error) {
-        console.error('Error during prediction:', error);
-        setMessage('Prediction failed. Please try again.');
-        setMessageType('error');
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-  const handleSave = async () => {
-    if (!selectedFile) {
-      setMessage("Please select a file first");
-      setMessageType("error");
-      return;
-    }
-
-    if (!validateFile(selectedFile)) {
-      setMessage("Please upload only image files (JPG, JPEG, PNG, GIF, BMP, WEBP)");
-      setMessageType("error");
-      return;
-    }
-
-    // First check if backend is accessible
-    const isConnected = await testBackendConnection();
-    if (!isConnected) {
-      setMessage("Cannot connect to the backend server. Please ensure it's running.");
-      setMessageType("error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        localStorage.setItem('mriImage', reader.result);
-        localStorage.setItem('mriImageName', selectedFile.name);
-        localStorage.setItem('mriUploadDate', new Date().toISOString());
-        
-        setMessage("Image saved successfully!");
-        setMessageType("success");
-
-        const imageData = reader.result.split(',')[1];        setIsLoading(true);
-        console.log("Sending prediction request to backend...");
-        
-        // Set a timeout for the request to avoid hanging indefinitely
-        const axiosConfig = {
-          timeout: 30000, // 30 seconds timeout
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        };        console.log("Making API request to predict endpoint...");
-        const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:5000';
-        const response = await axios.post(`${apiUrl}/api/predict`, {
-          image: imageData,
-          filename: selectedFile.name,
-          patientId: user?._id // Send patient ID if available
-        }, axiosConfig);
-
-        setPrediction(response.data.prediction);
-        setMessageType("success");      } catch (error) {
-        console.error('Prediction error:', error);        // Enhanced error logging and user feedback
-        console.error('Axios error details:', error);
-        
-        // Check if the server responded with an error message
-        if (error.response) {
-          // The server responded with a status code outside of 2xx range
-          console.error('Error response status:', error.response.status);
-          console.error('Error response data:', error.response.data);
-          if (error.response.status === 400) {
-            setMessage("Invalid input. Please check your file and try again.");
-          } else if (error.response.status === 401) {
-            setMessage("You are not authorized. Please log in again.");
-            setTimeout(() => navigate('/login'), 2000);
-          } else if (error.response.status === 403) {
-            setMessage("Access denied. You do not have permission to perform this action.");
-          } else if (error.response.status === 404) {
-            setMessage("API endpoint not found. Please contact support or try again later.");
-          } else if (error.response.status === 500) {
-            const errorMsg = error.response.data?.error || 'Unknown server error';
-            setMessage(`Server error: ${errorMsg}. Please try again later or contact support if the issue persists.`);
-            if (error.response.data?.details) {
-              console.error('Detailed error:', error.response.data.details);
-            }
-          } else {
-            setMessage(`Unexpected error (${error.response.status}): ${error.response.data?.error || 'Unknown error'}. Please try again.`);
-          }
-        } else if (error.request) {
-          // The request was made but no response was received
-          console.error('No response received from server');
-          setMessage("No response from server. Please check your internet connection or try again later.");
-        } else {
-          // Something happened in setting up the request
-          console.error('Error setting up request:', error.message);
-          setMessage(`Error: ${error.message}. Please try again.`);
-        }
-        
-        setMessageType("error");
-      } finally {
-        setIsLoading(false);
+      const predictionResponse = await axios.post(`${API_BASE_URL}/api/predict`, formData, {
+        withCredentials: true,
+        timeout: 30000,
+      });
+      if (predictionResponse.data && predictionResponse.data.prediction) {
+        setPrediction(predictionResponse.data.prediction);
+        setMessage('Prediction successful!');
+        setMessageType('success');
+      } else {
+        throw new Error('Invalid response format');
       }
-    };
-
-    reader.onerror = () => {
-      setMessage("Failed to read the file");
-      setMessageType("error");
-    };
-    reader.readAsDataURL(selectedFile);
+    } catch (error) {
+      console.error('Error during prediction:', error);
+      if (error.response?.status === 401) {
+        setMessage('You are not authorized. Please log in again.');
+        setTimeout(() => navigate('/login'), 2000);
+      } else {
+        setMessage(error.response?.data?.error || 'Prediction failed. Please try again.');
+      }
+      setMessageType('error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGetStarted = () => {
-    if (!selectedFile) {
+    if (!imageFile) {
       setMessage("Please upload an MRI scan first");
       setMessageType("error");
       return;
     }
-    handleSave();
+    handlePrediction();
   };
   const handleLogout = () => {
-    // Clear all auth-related items
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Clear MRI-related items
-    localStorage.removeItem('mriImage');
-    localStorage.removeItem('mriImageName');
-    localStorage.removeItem('mriUploadDate');
     navigate('/logout');
   };
 
@@ -360,6 +255,16 @@ const Dashboard = () => {
             onChange={handleFileChange}
             accept="image/*"
           />
+          {imageFile && imagePreviewUrl && (
+            <div style={{ marginTop: 12 }}>
+              <img
+                src={imagePreviewUrl}
+                alt="MRI preview"
+                style={{ maxWidth: 200, maxHeight: 150, objectFit: 'contain', borderRadius: 8 }}
+              />
+              <p style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{imageFile.name}</p>
+            </div>
+          )}
           {message && (
             <p className={`upload-message upload-message--${messageType}`}>
               {message}

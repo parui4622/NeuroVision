@@ -3,31 +3,22 @@ const mongoose = require('mongoose');
 // Temporary user storage until email is verified
 const pendingUserSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, index: true },
-  password: { type: String, required: true },
-  role: {
-    type: String,
-    enum: ['admin', 'doctor', 'patient'],
-    default: 'patient',
-    required: true
-  },
-  // Keep same shape for easy promotion to real User
-  doctorInfo: {
-    isVerified: { type: Boolean, default: true }
-  },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true }, // already hashed by controller
+  otp: { type: String, required: true },
+  role: { type: String, enum: ['admin', 'doctor', 'patient'], default: 'patient' },
   patientInfo: {
     dateOfBirth: { type: Date },
     gender: { type: String },
     medicalHistory: [String],
     serial: { type: String }
   },
-  emailVerificationOTP: { type: String, required: true },
-  otpExpiry: { type: Date, required: true },
-  createdAt: { type: Date, default: Date.now, expires: 60 * 15 }, // auto-clean after ~15 minutes
+  createdAt: { type: Date, default: Date.now, expires: 600 } // TTL index: 10 minutes
 });
+// No pre-save hashing: controller hashes password before creating PendingUser
 
 // Index for faster lookups
-pendingUserSchema.index({ email: 1 });
+// Removed redundant index for email, 'unique: true' already creates an index.
 
 // Strip sensitive fields from any serialization to avoid accidents
 pendingUserSchema.set('toJSON', {

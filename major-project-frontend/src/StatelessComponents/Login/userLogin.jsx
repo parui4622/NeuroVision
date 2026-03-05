@@ -3,16 +3,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Ballpit from "../../StatefullComponents/BallPitBg/BallPit.jsx";
 import Button from "../../StatefullComponents/ButtonLogin/LoginButton.jsx";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import { useAuth } from "../../utils/authHelpers";
 import { encryptPayload } from "../../utils/crypto";
 import "./login.css";
 
-// Suppress console in production
-if (import.meta.env.MODE === 'production') {
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
-}
 
 const UserLogin = () => {
   const navigate = useNavigate();
@@ -61,84 +56,75 @@ const UserLogin = () => {
     if (!password) {
       setError("Please enter your password");
       return;
-    }    try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
+    }
+    try {
+      const apiUrl = API_BASE_URL;
       // Prepare encrypted payload
       const encrypted = await encryptPayload({ email, password, role });
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(encrypted)
       });
       const data = await response.json();
       if (!response.ok) {
-        // Handle different error cases
-        if (response.status === 401) {          if (data.error === "Invalid password") {
-            const attempts = passwordAttempts + 1;
-            setPasswordAttempts(attempts);
-            if (attempts >= 3) {
-              setError("Too many failed attempts. Please reset your password.");
-            } else {
-              setError(`Invalid password - Attempt ${attempts} of 3`);
-            }
-          } else {
-            setError(role === 'admin' 
-              ? 'Access Denied - Administrative privileges required'
-              : `${role === 'doctor' ? 'Doctor' : 'User'} not registered. Please sign up first.`
-            );
-          }
+        if (data.requiresVerification && data.email) {
+          navigate('/verify-otp', { state: { email: data.email } });
+          setIsLoading(false);
           return;
         }
-        if (response.status === 403) {
-          setError(`Invalid credentials for ${role} access. Please check your role selection.`);
+        const backendError = data.error || data.message || 'Login failed. Please check your credentials.';
+        if (response.status === 401 && /invalid password/i.test(backendError)) {
+          const attempts = passwordAttempts + 1;
+          setPasswordAttempts(attempts);
+          setError(attempts >= 3 ? "Too many failed attempts. Please reset your password." : `Invalid password - Attempt ${attempts} of 3`);
           return;
         }
-        // Handle Mongo duplicate key error
-        if (data.error && data.error.includes('E11000 duplicate key error')) {
-          setError('An account with this email already exists. Please log in or use a different email.');
-          return;
-        }
-        setError(data.error || 'Login failed. Please check your credentials.');
+        setError(backendError);
         return;
-      }      // Verify role matches
+      }
+      // Verify role matches
       if (data.user.role !== role) {
         setError(role === 'admin'
           ? 'Access Denied - Administrative privileges required'
           : `Access Denied - This account is registered as a ${data.user.role}, not a ${role}`
         );
         return;
-      }      // Store authentication data using auth helper
-      auth.setAuthData(data.token, data.user);
-      
+      }
+      auth.setAuthData(null, data.user);
       // Save remembered info if remember me is checked
       if (isRememberMeChecked) {
         auth.setRememberMe(email, role);
-      }      // Show success message with patient ID if available
+      }
+      // Show success message with patient ID if available
       if (data.user.role === 'patient' && data.user.patientInfo && data.user.patientInfo.serial) {
-        setError("");        // Show a more prominent message with the patient ID 
+        setError("");
         setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo.serial}`);
-        setIsLoading(false); // Stop loading to show the ID clearly
-        
-        // Delay redirect to show the patient ID for longer time
+        setIsLoading(false);
         setTimeout(() => {
           console.log(`Login successful - Redirecting to ${data.user.role} dashboard`);
           auth.redirectBasedOnRole(data.user.role);
-        }, 3000); // Increased from 2000ms to 3000ms to give more time to see ID
-        
+        }, 3000);
         return;
       }
-      
-      console.log(`Login successful - Redirecting to ${data.user.role} dashboard`);      // Redirect based on role using auth helper
+      console.log(`Login successful - Redirecting to ${data.user.role} dashboard`);
       const redirected = auth.redirectBasedOnRole(data.user.role);
       if (!redirected) {
         console.error("Unknown role:", data.user.role);
         navigate('/login');
-      }    } catch (err) {
-      setError(err.message || 'Login failed');
+      }
+    } catch (err) {
+      const errData = err.response?.data;
+      if (errData?.requiresVerification && errData?.email) {
+        navigate('/verify-otp', { state: { email: errData.email } });
+        return;
+      }
+      setError(errData?.error || errData?.message || err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
-  };  // No developer access in production
+  };
 
   return (
     <div className="login-page">
@@ -238,6 +224,6 @@ const UserLogin = () => {
       </div>
     </div>
   );
-};
-
+}
 export default UserLogin;
+

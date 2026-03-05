@@ -3,39 +3,11 @@ const path = require('path');
 
 const predict = async (req, res) => {
     try {
-        console.log('Received prediction request');
-        console.log('Request body keys:', Object.keys(req.body));
-        console.log('Request body image data length:', req.body.image ? req.body.image.length : 'no image field');
-        console.log('Request files:', req.files ? 'files present' : 'no files');
-        console.log('Request file:', req.file ? `file present: ${req.file.originalname}` : 'no file');
-        
-        let imageData = null;
-        
-        // Check if image is uploaded as file
-        if (req.file) {
-            console.log('Image uploaded as file:', req.file.originalname);
-            imageData = req.file.buffer.toString('base64');
-        } 
-        // Check if image is sent as base64 in body
-        else if (req.body.image) {
-            console.log('Image received as base64 data');
-            imageData = req.body.image;
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image file provided' });
         }
-        
-        if (!imageData) {
-            console.log('No image data provided');
-            console.log('Request body keys:', Object.keys(req.body));
-            console.log('Request file:', req.file ? 'present' : 'not present');
-            return res.status(400).json({ 
-                error: 'No image data provided',
-                message: 'Please upload an image file or send base64 image data in the "image" field',
-                received: {
-                    bodyKeys: Object.keys(req.body),
-                    hasFile: !!req.file,
-                    bodyImageLength: req.body.image ? req.body.image.length : 0
-                }
-            });
-        }
+
+        const imageData = req.file.buffer.toString('base64');
 
         console.log('Image data received, processing...');
         console.log('Preparing to run prediction Python script...');

@@ -3,6 +3,111 @@ const Report = require('../models/Report');
 const Appointment = require('../models/Appointment');
 const emailService = require('../utils/emailService');
 
+// Get doctor dashboard stats (total patients, appointments today, pending reports)
+exports.getDoctorDashboard = async (req, res) => {
+    try {
+        const doctorId = req.user.userId;
+        const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
+        if (!doctor) {
+            return res.status(403).json({ error: 'Only doctors can access this resource' });
+        }
+        const totalPatients = await User.countDocuments({ assignedDoctor: doctorId });
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+        const appointmentsToday = await Appointment.countDocuments({
+            doctor: doctorId,
+            date: { $gte: todayStart, $lte: todayEnd },
+            status: { $in: ['scheduled', 'approved'] }
+        });
+        const patientIds = await User.find({ assignedDoctor: doctorId }).distinct('_id');
+        const pendingReports = await Report.countDocuments({
+            patient: { $in: patientIds },
+            status: 'pending'
+        });
+        res.json({
+            success: true,
+            totalPatients,
+            appointmentsToday,
+            pendingReports
+        });
+    } catch (error) {
+        console.error('Error fetching doctor dashboard:', error);
+        res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    }
+};
+
+// Get single patient details (for doctor view)
+exports.getPatientDetails = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const doctorId = req.user.userId;
+        const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
+        if (!doctor) {
+            return res.status(403).json({ error: 'Only doctors can access this resource' });
+        }
+        const patient = await User.findOne({
+            _id: patientId,
+            assignedDoctor: doctorId,
+            role: 'patient'
+        }).select('-password').lean();
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found or not assigned to you' });
+        }
+        const reports = await Report.find({ patient: patientId })
+            .sort({ createdAt: -1 })
+            .select('-image')
+            .lean();
+        const latestReport = reports[0] || null;
+        const classificationHistory = reports.map(r => r.classification).join(', ') || 'N/A';
+        res.json({
+            ...patient,
+            classificationHistory,
+            reports,
+            latestReport,
+            medicalHistory: patient.patientInfo?.medicalHistory?.join(', ') || 'N/A',
+            timeRemaining: null
+        });
+    } catch (error) {
+        console.error('Error fetching patient details:', error);
+        res.status(500).json({ error: 'Failed to fetch patient details' });
+    }
+};
+
+// Update patient medications/review (stored on latest report or patient)
+exports.updatePatientDetails = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const { medications, review } = req.body;
+        const doctorId = req.user.userId;
+        const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
+        if (!doctor) {
+            return res.status(403).json({ error: 'Only doctors can access this resource' });
+        }
+        const patient = await User.findOne({
+            _id: patientId,
+            assignedDoctor: doctorId,
+            role: 'patient'
+        });
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found or not assigned to you' });
+        }
+        const latestReport = await Report.findOne({ patient: patientId }).sort({ createdAt: -1 });
+        if (latestReport) {
+            if (medications !== undefined) latestReport.recommendedMedications = Array.isArray(medications) ? medications : (medications ? [medications] : []);
+            if (review !== undefined) latestReport.doctorNotes = review;
+            latestReport.reviewedAt = new Date();
+            latestReport.reviewedBy = doctorId;
+            await latestReport.save();
+        }
+        res.json({ message: 'Medications and review saved successfully.' });
+    } catch (error) {
+        console.error('Error updating patient details:', error);
+        res.status(500).json({ error: 'Failed to save' });
+    }
+};
+
 // Get all patients assigned to a specific doctor
 exports.getAssignedPatients = async (req, res) => {
     try {
@@ -243,6 +348,7 @@ exports.getAppointments = async (req, res) => {
         res.json({
             appointments: appointments.map(appt => ({
                 _id: appt._id,
+                patient: appt.patient?._id?.toString?.() || appt.patient,
                 patientName: appt.patient?.name || 'Unknown',
                 patientEmail: appt.patient?.email || '',
                 date: appt.date,

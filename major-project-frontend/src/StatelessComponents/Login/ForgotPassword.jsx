@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Ballpit from "../../StatefullComponents/BallPitBg/BallPit.jsx";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import "./login.css";
 
 const ForgotPassword = () => {
@@ -31,8 +32,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/password/request-reset`, {
+      const response = await fetch(`${API_BASE_URL}/api/password/request-reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -89,8 +89,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/password/reset`, {
+      const response = await fetch(`${API_BASE_URL}/api/password/reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -128,8 +127,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/password/verify`, {
+      const response = await fetch(`${API_BASE_URL}/api/password/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

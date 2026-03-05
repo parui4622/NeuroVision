@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const sessionAuth = require('../middleware/sessionAuth');
 const {
+    getDoctorDashboard,
+    getPatientDetails,
+    updatePatientDetails,
     getAssignedPatients,
     getPatientsByCategory,
     getPatientReports,
@@ -13,6 +16,13 @@ const {
 
 // Define authentication middleware for all routes
 const authenticate = sessionAuth;
+
+// Doctor dashboard stats
+router.get('/dashboard', authenticate, getDoctorDashboard);
+
+// Get single patient details and update
+router.get('/patient/:patientId', authenticate, getPatientDetails);
+router.post('/patient/:patientId/update', authenticate, updatePatientDetails);
 
 // Get all patients assigned to the doctor
 router.get('/patients', authenticate, getAssignedPatients);

@@ -1,12 +1,10 @@
 import axios from 'axios';
-
-// Utility functions for making API requests to the backend
-
-const API_URL = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from './apiConfig';
 
 // Axios instance with base URL and default headers
 export const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -66,17 +64,15 @@ export const deleteApi = async (endpoint) => {
 };
 
 // Get the API base URL
-export const getApiUrl = () => {
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000';
-};
+export const getApiUrl = () => API_BASE_URL;
 
 // API endpoints for different features
 export const endpoints = {
   auth: {
-    login: '/auth/login',
-    register: '/auth/register',
-    forgotPassword: '/auth/forgot-password',
-    resetPassword: '/auth/reset-password',
+    login: '/api/auth/login',
+    register: '/api/auth/signup',
+    forgotPassword: '/api/password/verify',
+    resetPassword: '/api/password/reset',
   },
   admin: {
     dashboard: '/api/admin',

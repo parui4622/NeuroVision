@@ -3,6 +3,7 @@ import { CalendarCheck2, FileUp, UserCircle2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DateCalendarValue from "../../StatefullComponents/DateCalender/dateCalender";
+import { API_BASE_URL } from '../../utils/apiConfig';
 import "./DoctorDashboard.css";
 
 const DoctorDashboard = () => {
@@ -69,9 +70,7 @@ const DoctorDashboard = () => {
         setLoading(true);
         
         // Get API URL from environment
-        const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
-        
-        const response = await axios.get(`${apiUrl}/api/doctor/dashboard`, {
+        const response = await axios.get(`${API_BASE_URL}/api/doctor/dashboard`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -99,13 +98,12 @@ const DoctorDashboard = () => {
       try {
         setAppointmentsLoading(true);
         setAppointmentsError("");
-        const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
         const token = localStorage.getItem('token');
         // Fetch all future appointments
-        const response = await axios.get(`${apiUrl}/api/doctor/appointments`, {
+        const response = await axios.get(`${API_BASE_URL}/api/doctor/appointments`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        setAppointments(response.data || []);
+        setAppointments(response.data?.appointments || []);
       } catch (err) {
         setAppointmentsError("Unable to fetch appointments.");
         setAppointments([]);
@@ -162,9 +160,8 @@ const DoctorDashboard = () => {
   // Mark appointment as completed
   const handleCompleteAppointment = async (appointmentId) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('token');
-      await axios.put(`${apiUrl}/api/doctor/appointments/${appointmentId}/complete`, {}, {
+      await axios.put(`${API_BASE_URL}/api/doctor/appointments/${appointmentId}/status`, { status: 'completed' }, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setAppointments((prev) => prev.map(appt => appt._id === appointmentId ? { ...appt, status: 'completed' } : appt));
@@ -176,10 +173,9 @@ const DoctorDashboard = () => {
   // Approve or deny appointment
   const handleAppointmentStatus = async (appointmentId, status) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('token');
       await axios.put(
-        `${apiUrl}/api/doctor/appointments/${appointmentId}/status`,
+        `${API_BASE_URL}/api/doctor/appointments/${appointmentId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );

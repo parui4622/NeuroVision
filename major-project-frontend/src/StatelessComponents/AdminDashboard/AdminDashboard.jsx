@@ -1,7 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Switch, TextField } from "@mui/material";
+import axios from "axios";
 import { Key, Trash2, UserCircle2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import { deleteApi, endpoints, fetchApi, postApi } from '../../utils/apiUtils';
 import { encryptPayload } from '../../utils/crypto';
 import "./AdminDashboard.css";
@@ -21,11 +23,9 @@ const AdminDashboard = () => {
   const [admins, setAdmins] = useState([]);
   const [selectedTab, setSelectedTab] = useState('doctors'); // 'doctors', 'patients', or 'admins'
   const [selectedDoctor, setSelectedDoctor] = useState("");
-  const [selectedPatient, setSelectedPatient] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
   const [assignStatus, setAssignStatus] = useState("");
   const [passwordChangeDialog, setPasswordChangeDialog] = useState(false);
-  const [selectedAdminId, setSelectedAdminId] = useState('');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [changePwdStatus, setChangePwdStatus] = useState('');
@@ -87,7 +87,7 @@ const AdminDashboard = () => {
     }
   };
   const handleDeleteUser = async (userId, userType) => {
-    if (window.confirm(`Are you sure you want to delete this ${userType}?`)) {
+    if (globalThis.confirm(`Are you sure you want to delete this ${userType}?`)) {
       try {
         await deleteApi(`${endpoints.admin.dashboard}/${userType}/${userId}`);
         fetchUsers(); // Refresh the lists
@@ -108,14 +108,14 @@ const AdminDashboard = () => {
     }
     try {
       setAssignStatus("Assigning...");
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
-      await axios.post(`${apiUrl}/api/admin/assign-doctor`,
+      await axios.post(`${API_BASE_URL}/api/admin/assign-doctor`,
         { doctorId: selectedDoctor, patientId, appointmentDate },
         getAuthConfig()
       );
       setAssignStatus("Doctor assigned successfully!");
       fetchUsers();
     } catch (err) {
+      console.error('Failed to assign doctor:', err);
       setAssignStatus("Failed to assign doctor.");
     }
   };
@@ -144,10 +144,132 @@ const AdminDashboard = () => {
     }
   };
 
-  const openPasswordDialog = (adminId) => {
-    setSelectedAdminId(adminId);
+  const openPasswordDialog = () => {
     setPasswordChangeDialog(true);
     setChangePwdStatus('');
+  };
+
+  const renderUserTable = () => {
+    if (selectedTab === 'admins') {
+      return (
+        <div className="user-table">
+          <h4>Registered Admins</h4>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Registration Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(admins) && admins.map(admin => (
+                  <tr key={admin._id}>
+                    <td>{admin.name}</td>
+                    <td>{admin.email}</td>
+                    <td>{new Date(admin.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="change-password-button"
+                        onClick={() => openPasswordDialog(admin._id)}
+                        title="Change Password"
+                      >
+                        <Key size={16} />
+                      </button>
+                      <button 
+                        className="delete-button"
+                        onClick={() => handleDeleteUser(admin._id, 'admin')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {changePwdStatus && <p className="status-message">{changePwdStatus}</p>}
+        </div>
+      );
+    }
+
+    if (selectedTab === 'doctors') {
+      return (
+        <div className="user-table">
+          <h4>Registered Doctors</h4>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Registration Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(doctors) && doctors.map(doctor => (
+                  <tr key={doctor._id}>
+                    <td>{doctor.name}</td>
+                    <td>{doctor.email}</td>
+                    <td>{new Date(doctor.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button 
+                        className="delete-button"
+                        onClick={() => handleDeleteUser(doctor._id, 'doctor')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="user-table">
+        <h4>Registered Patients</h4>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Serial Number</th>
+                <th>Classification Type</th>
+                <th>Registration Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.isArray(patients) && patients.map(patient => (
+                <tr key={patient._id}>
+                  <td>{patient.name}</td>
+                  <td>{patient.email}</td>
+                  <td>{patient.patientInfo?.serial || 'N/A'}</td>
+                  <td>{patient.patientInfo?.classificationType || patient.classificationType || 'N/A'}</td>
+                  <td>{new Date(patient.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button 
+                      className="delete-button"
+                      onClick={() => handleDeleteUser(patient._id, 'patient')}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -227,118 +349,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="user-list">
-            {selectedTab === 'admins' ? (
-              <div className="user-table">
-                <h4>Registered Admins</h4>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Registration Date</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.isArray(admins) && admins.map(admin => (
-                        <tr key={admin._id}>
-                          <td>{admin.name}</td>
-                          <td>{admin.email}</td>
-                          <td>{new Date(admin.createdAt).toLocaleDateString()}</td>
-                          <td>
-                            <button 
-                              className="change-password-button"
-                              onClick={() => openPasswordDialog(admin._id)}
-                              title="Change Password"
-                            >
-                              <Key size={16} />
-                            </button>
-                            <button 
-                              className="delete-button"
-                              onClick={() => handleDeleteUser(admin._id, 'admin')}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {changePwdStatus && <p className="status-message">{changePwdStatus}</p>}
-              </div>
-            ) : selectedTab === 'doctors' ? (
-              <div className="user-table">
-                <h4>Registered Doctors</h4>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Registration Date</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.isArray(doctors) && doctors.map(doctor => (
-                        <tr key={doctor._id}>
-                          <td>{doctor.name}</td>
-                          <td>{doctor.email}</td>
-                          <td>{new Date(doctor.createdAt).toLocaleDateString()}</td>
-                          <td>
-                            <button 
-                              className="delete-button"
-                              onClick={() => handleDeleteUser(doctor._id, 'doctor')}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="user-table">
-                <h4>Registered Patients</h4>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Serial Number</th>
-                        <th>Classification Type</th>
-                        <th>Registration Date</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.isArray(patients) && patients.map(patient => (
-                        <tr key={patient._id}>
-                          <td>{patient.name}</td>
-                          <td>{patient.email}</td>
-                          <td>{patient.patientInfo?.serial || 'N/A'}</td>
-                          <td>{patient.patientInfo?.classificationType || patient.classificationType || 'N/A'}</td>
-                          <td>{new Date(patient.createdAt).toLocaleDateString()}</td>
-                          <td>
-                            <button 
-                              className="delete-button"
-                              onClick={() => handleDeleteUser(patient._id, 'patient')}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            {renderUserTable()}
           </div>
         </section>
 

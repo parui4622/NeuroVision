@@ -27,7 +27,7 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['patient']} />} />
           <Route path="/admin" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
           <Route path="/doctor" element={<ProtectedRoute element={<DoctorDashboard />} allowedRoles={['doctor']} />} />
-          <Route path="/doctor/patient/:patientId" element={<PatientDetails />} />
+          <Route path="/doctor/patient/:patientId" element={<ProtectedRoute element={<PatientDetails />} allowedRoles={['doctor']} />} />
         </Routes>
       </Router>
     </>

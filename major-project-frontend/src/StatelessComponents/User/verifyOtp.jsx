@@ -1,78 +1,64 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../utils/apiConfig";
+import { useAuth } from "../../utils/authHelpers";
 import "../Login/login.css";
 
-// Suppress console in production to avoid leaking sensitive data
-if (import.meta.env.MODE === 'production') {
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
-}
 
 const VerifyOtp = () => {
+    const { redirectBasedOnRole, setAuthData } = useAuth();
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [resendMsg, setResendMsg] = useState("");
   const [expired, setExpired] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const userId = location.state?.userId;
   const email = location.state?.email;
-  const selectedRole = location.state?.role; // role selected during signup
   const handleSubmit = async (e) => {
     e.preventDefault();
-  setError("");
-  setSuccess("");
-  setResendMsg("");
-  setExpired(false);
-    
-    // Validate inputs before sending
+    setError("");
+    setSuccess("");
+    setResendMsg("");
+    setExpired(false);
     if (!otp) {
       setError("Please enter the OTP sent to your email.");
       return;
     }
-    
-    if (!userId) {
-      setError("User ID is missing. Please try signing up again.");
+    if (!email) {
+      setError("No user found. Please sign up again.");
       return;
     }
-    
     try {
-  const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
-      
-      const response = await fetch(`${apiUrl}/api/auth/verify-email`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, otp })
+        body: JSON.stringify({ email, otp })
       });
-      
-  const data = await response.json();
-      
-  if (response.ok) {
-        setSuccess("Email verified! Redirecting...");
-        
-        // Store authentication data in localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        setTimeout(() => {
-          // Use the role from the server response as it's more reliable
-          const userRole = data.user?.role || selectedRole;
-          if (userRole === 'doctor') navigate('/doctor');
-          else if (userRole === 'patient') navigate('/dashboard');
-          else if (userRole === 'admin') navigate('/admin');
-          else navigate('/');
-        }, 1500);
-      } else {
-        // Handle specific error messages
-  const errorMessage = data.error || data.message || data.detail || "Invalid OTP";
-        if (/user not found/i.test(errorMessage) || /expired/i.test(errorMessage)) {
-          setExpired(true);
-          setError("Your verification session has expired or was not found. Please sign up again.");
-        } else {
-          setError(errorMessage);
+      const data = await response.json();
+      if (response.ok && data.user?.role) {
+        setSuccess("Email verified! Logging you in...");
+        setAuthData(null, data.user);
+        switch (data.user.role) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'doctor':
+            navigate('/doctor');
+            break;
+          case 'patient':
+            navigate('/dashboard');
+            break;
+          default:
+            navigate('/');
         }
+      } else if (response.ok) {
+        setSuccess("Email verified! Redirecting...");
+        setTimeout(() => navigate('/login'), 1500);
+      } else {
+        setError(data.error || "Invalid OTP");
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
@@ -84,11 +70,10 @@ const VerifyOtp = () => {
     setSuccess("");
     setResendMsg("");
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/auth/resend-otp`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ email })
       });
       const data = await response.json();
       if (response.ok) {
@@ -103,11 +88,12 @@ const VerifyOtp = () => {
         }
       }
     } catch (err) {
+      console.error('resend-otp failed:', err);
       setError("An error occurred. Please try again.");
     }
   };
 
-  if (!userId) {
+  if (!email) {
     return (
       <div className="signup-page">
         <div className="signup-card">
@@ -125,52 +111,35 @@ const VerifyOtp = () => {
     <div className="signup-page">
       <div className="signup-card">
         <h2>Verify Your Email</h2>
-        {email && (
-          <div className="info-text" style={{ marginBottom: '20px' }}>
-            We've sent a verification code to <strong>{email}</strong>
+        <div className="info-text" style={{ marginBottom: '20px' }}>
+          We've sent a verification code to <strong>{email}</strong>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Enter OTP"
+            value={otp}
+            onChange={e => setOtp(e.target.value)}
+            required
+            className="animated-input"
+          />
+          <div className="button-container">
+            <button type="submit" className="animated-btn">Verify</button>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="back-to-login"
+            >
+              Back to Login
+            </button>
           </div>
-        )}
-        {expired ? (
-          <div>
-            <div className="field-error" style={{marginBottom: 16}}>{error}</div>
-            <div className="button-container">
-              <button type="button" onClick={() => navigate('/signup')} className="animated-btn">Sign Up Again</button>
-              <button type="button" onClick={() => navigate('/login')} className="back-to-login">Back to Login</button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={e => setOtp(e.target.value)}
-              required
-              className="animated-input"
-            />
-            <div className="button-container">
-              <button type="submit" className="animated-btn">Verify</button>
-              <button 
-                style={{marginTop: 10}} 
-                onClick={handleResend} 
-                type="button" 
-                className="animated-btn secondary-btn"
-              >
-                Resend OTP
-              </button>
-              <button 
-                type="button"
-                onClick={() => navigate('/login')}
-                className="back-to-login"
-              >
-                Back to Login
-              </button>
-            </div>
-          </form>
-        )}
+        </form>
         {error && <div className="field-error">{error}</div>}
         {success && <div className="success-message">{success}</div>}
         {resendMsg && <div className="success-message">{resendMsg}</div>}
+        <button type="button" onClick={handleResend} className="back-to-login" style={{ marginTop: 12 }}>
+          Resend OTP
+        </button>
       </div>
     </div>
   );

@@ -1,19 +1,21 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../utils/apiConfig";
 
 const Logout = () => {
   const navigate = useNavigate();
   useEffect(() => {
-    // Clear all auth and app state
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('mriImage');
-    localStorage.removeItem('mriImageName');
-    localStorage.removeItem('mriUploadDate');
-    // Optionally clear more if needed
-    const timer = setTimeout(() => {
-      navigate("/");
-    }, 2000);
+    const doLogout = async () => {
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+      } catch {
+        // Ignore; clear local state regardless
+      }
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    };
+    doLogout();
+    const timer = setTimeout(() => navigate("/"), 2000);
     return () => clearTimeout(timer);
   }, [navigate]);
 

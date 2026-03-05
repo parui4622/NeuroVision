@@ -2,6 +2,8 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { config } = require('./config');
 require('dotenv').config();
+const { setServers } = require('node:dns/promises');
+setServers(['1.1.1.1', '8.8.8.8']);
 
 // MongoDB Connection Options
 mongoose.set('strictQuery', false);

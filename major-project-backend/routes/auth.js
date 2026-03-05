@@ -54,7 +54,7 @@ const verifyEmailLimiter = rateLimit({
 });
 
 router.post('/signup', signupLimiter, decryptMiddleware, signup);
-router.post('/login', decryptMiddleware, login);
+router.post('/login', loginLimiter, decryptMiddleware, login);
 router.post('/logout', logout);
 router.get('/validate-session', validateSession);
 router.post('/verify-email', verifyEmailLimiter, verifyEmail);

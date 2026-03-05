@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/apiConfig';
 
 const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -11,12 +12,6 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
       try {
         const token = localStorage.getItem('token');
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        if (!token) {
-          setIsAuthenticated(false);
-          setLoading(false);
-          return;
-        }
 
         // Handle developer bypass token
         if (token === 'dev-bypass-token') {
@@ -26,12 +21,12 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
           return;
         }
 
-        // Validate regular session with backend
-        const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
-        const response = await fetch(`${apiUrl}/api/auth/validate-session`, {
+        // Validate session: token in httpOnly cookie (credentials) or Bearer fallback
+        const response = await fetch(`${API_BASE_URL}/api/auth/validate-session`, {
           method: 'GET',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            ...(token && { 'Authorization': `Bearer ${token}` }),
             'Content-Type': 'application/json'
           }
         });
@@ -41,7 +36,6 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
           setUser(data.user);
           setIsAuthenticated(true);
         } else {
-          // Session invalid, clear local storage
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setIsAuthenticated(false);

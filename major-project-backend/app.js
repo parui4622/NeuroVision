@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const predictRoutes = require('./routes/predict');
@@ -32,13 +34,18 @@ if (process.env.NODE_ENV === 'production') {
   app.use(helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: true }));
 }
 
-// Dynamic CORS setup for dev and prod
+// CORS: env-driven origins only; localhost added only in development
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_URL_DEV,
   process.env.FRONTEND_URL_PROD,
-  process.env.FRONTEND_URL_PREVIEW
+  process.env.FRONTEND_URL_PREVIEW,
+  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:5173', 'http://127.0.0.1:5173'] : [])
 ].filter(Boolean);
+
+if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+  console.warn('No FRONTEND_URL* env vars set. CORS will reject all cross-origin requests.');
+}
 
 if (process.env.NODE_ENV !== 'production') {
   console.log('Allowed CORS origins:', allowedOrigins);
@@ -50,6 +57,7 @@ app.use(helmetMiddleware(connectSrc));
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no Origin header (e.g., mobile apps, Postman)
     if (!origin) {
       // In production, block requests with no Origin header (CSRF on cookie-based auth)
       if (process.env.NODE_ENV === 'production') {
@@ -69,6 +77,7 @@ app.use(cors({
   optionsSuccessStatus: 204,
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Log loaded env values for debugging (non-prod)
 if (process.env.NODE_ENV !== 'production') {
@@ -76,8 +85,15 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('Loaded PORT:', process.env.PORT);
 }
 
-// Routes
-app.use('/api/auth', authRoutes);
+// Rate limiter for /api/auth
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many authentication attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/predict', predictRoutes);
 app.use('/api/password', passwordResetRoutes);

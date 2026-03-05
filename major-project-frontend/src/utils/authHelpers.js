@@ -6,8 +6,10 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   const setAuthData = (token, user) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    // Token-only in httpOnly cookie; store only user for UI/routing
+    if (token) localStorage.setItem('token', token);
+    else localStorage.removeItem('token');
+    if (user) localStorage.setItem('user', JSON.stringify(user));
   };
   
   const setRememberMe = (email, role) => {

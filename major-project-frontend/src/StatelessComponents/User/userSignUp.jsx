@@ -2,15 +2,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SignupLoader from "../../StatefullComponents/SignupLoader/SignupLoader";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import { encryptPayload } from "../../utils/crypto";
 import "./login-button.css";
 import "./userSignUp.css";
 
 // Suppress console in production
 if (import.meta.env.MODE === 'production') {
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
 }
 
 const UserSignUp = () => {  
@@ -144,19 +142,16 @@ const UserSignUp = () => {
         } : undefined
       };
       if (!formattedForm.patientInfo) delete formattedForm.patientInfo;
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
       const encrypted = await encryptPayload(formattedForm);
-      const response = await fetch(`${apiUrl}/api/auth/signup`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(encrypted)
       });
       const data = await response.json();
       if (response.ok) {
-        setTimeout(() => {
-          setLoading(false);
-          navigate('/verify-otp', { state: { email: form.email, userId: data.userId, role: form.role, name: form.name } });
-        }, 1000);
+        setLoading(false);
+        navigate('/verify-otp', { state: { email: form.email } });
         return;
       } else {
         setLoading(false);

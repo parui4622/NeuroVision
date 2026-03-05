@@ -60,8 +60,8 @@ exports.verifyUser = async (req, res) => {
 
         // Generate a verification token that expires in 10 minutes
         const verificationToken = crypto.randomBytes(32).toString('hex');
-        user.verificationToken = verificationToken;
-        user.verificationTokenExpiry = Date.now() + 600000; // 10 minutes
+        user.resetToken = verificationToken;
+        user.resetTokenExpiry = new Date(Date.now() + 600000); // 10 minutes
         await user.save();
 
         // Send recovery email

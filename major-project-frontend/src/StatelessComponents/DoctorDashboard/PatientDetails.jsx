@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { API_BASE_URL } from '../../utils/apiConfig';
 import './PatientDetails.css';
 
 const PatientDetails = () => {
@@ -14,12 +15,16 @@ const PatientDetails = () => {
   useEffect(() => {
     const fetchPatientDetails = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || process.env.BACKEND_URL;
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${apiUrl}/api/doctor/patient/${patientId}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/doctor/patient/${patientId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setPatient(response.data);
+        const data = response.data;
+        setPatient(data);
+        if (data?.latestReport) {
+          setMedications(Array.isArray(data.latestReport.recommendedMedications) ? data.latestReport.recommendedMedications.join('\n') : data.latestReport.recommendedMedications || '');
+          setReview(data.latestReport.doctorNotes || '');
+        }
       } catch (err) {
         setError('Failed to fetch patient details.');
       } finally {
@@ -32,10 +37,9 @@ const PatientDetails = () => {
 
   const handleSave = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || process.env.BACKEND_URL;
       const token = localStorage.getItem('token');
       await axios.post(
-        `${apiUrl}/api/doctor/patient/${patientId}/update`,
+        `${API_BASE_URL}/api/doctor/patient/${patientId}/update`,
         { medications, review },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -47,6 +51,7 @@ const PatientDetails = () => {
 
   if (loading) return <p>Loading patient details...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (!patient) return <p>Patient not found.</p>;
 
   return (
     <div className="patient-details">
