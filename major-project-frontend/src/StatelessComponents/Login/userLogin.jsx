@@ -8,7 +8,6 @@ import { useAuth } from "../../utils/authHelpers";
 import { encryptPayload } from "../../utils/crypto";
 import "./login.css";
 
-
 const UserLogin = () => {
   const navigate = useNavigate();
   const auth = useAuth();
@@ -23,7 +22,6 @@ const UserLogin = () => {
   const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
   
   useEffect(() => {
-    // Load remembered email and role when component mounts
     const rememberedEmail = localStorage.getItem('rememberedEmail');
     const rememberedRole = localStorage.getItem('rememberedRole');
     
@@ -35,31 +33,24 @@ const UserLogin = () => {
     if (rememberedRole) {
       setRole(rememberedRole);
     }
-    
-    // Only redirect if user is already logged in and is not on login page intentionally
-    // (e.g., if they try to access /login while logged in, show a message instead)
-    // Remove the auto-redirect here to allow switching accounts
   }, [navigate, auth]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true); // Show loading state
-    if (!email && !password) {
+    setMessage("");
+    
+    // 1. Validate BEFORE setting the loading state
+    if (!email || !password) {
       setError("Please enter your email and password");
       return;
     }
-    if (!email) {
-      setError("Please enter your email address");
-      return;
-    }
-    if (!password) {
-      setError("Please enter your password");
-      return;
-    }
+
+    // 2. Now start the loading animation
+    setIsLoading(true); 
+
     try {
       const apiUrl = API_BASE_URL;
-      // Prepare encrypted payload
       const encrypted = await encryptPayload({ email, password, role });
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
@@ -67,11 +58,12 @@ const UserLogin = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(encrypted)
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
         if (data.requiresVerification && data.email) {
           navigate('/verify-otp', { state: { email: data.email } });
-          setIsLoading(false);
           return;
         }
         const backendError = data.error || data.message || 'Login failed. Please check your credentials.';
@@ -84,7 +76,7 @@ const UserLogin = () => {
         setError(backendError);
         return;
       }
-      // Verify role matches
+      
       if (data.user.role !== role) {
         setError(role === 'admin'
           ? 'Access Denied - Administrative privileges required'
@@ -92,36 +84,33 @@ const UserLogin = () => {
         );
         return;
       }
+      
       auth.setAuthData(null, data.user);
-      // Save remembered info if remember me is checked
+      
       if (isRememberMeChecked) {
         auth.setRememberMe(email, role);
       }
-      // Show success message with patient ID if available
+      
       if (data.user.role === 'patient' && data.user.patientInfo && data.user.patientInfo.serial) {
         setError("");
         setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo.serial}`);
-        setIsLoading(false);
         setTimeout(() => {
-          console.log(`Login successful - Redirecting to ${data.user.role} dashboard`);
           auth.redirectBasedOnRole(data.user.role);
         }, 3000);
         return;
       }
-      console.log(`Login successful - Redirecting to ${data.user.role} dashboard`);
-      const redirected = auth.redirectBasedOnRole(data.user.role);
-      if (!redirected) {
-        console.error("Unknown role:", data.user.role);
-        navigate('/login');
-      }
+      
+      auth.redirectBasedOnRole(data.user.role);
+      
     } catch (err) {
       const errData = err.response?.data;
       if (errData?.requiresVerification && errData?.email) {
         navigate('/verify-otp', { state: { email: errData.email } });
         return;
       }
-      setError(errData?.error || errData?.message || err.message || 'Login failed');
+      setError(errData?.error || errData?.message || err.message || 'An unexpected error occurred. Please try again.');
     } finally {
+      // 3. This guarantees the button ALWAYS unlocks, no matter what happened above
       setIsLoading(false);
     }
   };
@@ -139,7 +128,9 @@ const UserLogin = () => {
       />
       <div className="login-card animated-card" style={{zIndex: 2, position: 'relative'}}>
         <h2 className="animated-text">Login</h2>
-        {error && <div className="error-message animated-error">{error}</div>}        {message && (
+        
+        {error && <div className="error-message animated-error">{error}</div>}        
+        {message && (
           <div className={`success-message animated-success ${message.includes('Patient ID:') ? 'patient-id-message' : ''}`}>
             {message.includes('Patient ID:') ? (
               <>
@@ -152,6 +143,7 @@ const UserLogin = () => {
             )}
           </div>
         )}
+        
         <form onSubmit={handleLogin} autoComplete="off">
           <input
             type="email"
@@ -193,7 +185,8 @@ const UserLogin = () => {
             <option value="doctor">Doctor</option>
             <option value="admin">Admin</option>
           </select>
-            <div className="login-options">
+          
+          <div className="login-options">
             <div className="remember-me">
               <input 
                 type="checkbox" 
@@ -213,7 +206,9 @@ const UserLogin = () => {
             <div className="forgot-password">
               <span onClick={() => navigate('/forgot-password')}>Forgot Password?</span>
             </div>
-          </div>          <div className="login-btn-container">
+          </div>          
+          
+          <div className="login-btn-container">
             <Button type="submit" isLoading={isLoading} />
           </div>
           
@@ -226,4 +221,3 @@ const UserLogin = () => {
   );
 }
 export default UserLogin;
-

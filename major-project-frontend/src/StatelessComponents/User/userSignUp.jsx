@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import toast, { Toaster } from "react-hot-toast"; // <-- 1. Imported the toast library
 import { useNavigate } from "react-router-dom";
 import SignupLoader from "../../StatefullComponents/SignupLoader/SignupLoader";
 import { API_BASE_URL } from "../../utils/apiConfig";
@@ -149,23 +150,47 @@ const UserSignUp = () => {
         body: JSON.stringify(encrypted)
       });
       const data = await response.json();
+      
       if (response.ok) {
         setLoading(false);
-        navigate('/verify-otp', { state: { email: form.email } });
+        toast.success("Account created successfully!"); // <-- 2. Added success toast
+        
+        // Small delay so they can see the success message before jumping to the OTP page
+        setTimeout(() => {
+          navigate('/verify-otp', { state: { email: form.email } });
+        }, 1500); 
         return;
       } else {
         setLoading(false);
-        alert(`Registration Failed\n\n${data.message || data.error || 'An unexpected error occurred'}`);
+        // <-- 3. Replaced alert with sleek error toast
+        toast.error(data.message || data.error || 'An unexpected error occurred'); 
         throw new Error(data.error || 'Failed to register');
       }
     } catch (error) {
       setLoading(false);
-      alert(error.message || 'An error occurred during registration');
+      // <-- 4. Replaced alert with sleek error toast
+      // Prevent double toasting if we already threw an error above
+      if (error.message !== 'Failed to register') {
+        toast.error(error.message || 'An error occurred during registration');
+      }
     }
   };
 
   return (
     <div className="signup-page">
+      {/* 5. Added the Toaster component to render the popups */}
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        toastOptions={{
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+      />
+      
       <div className="signup-card">
         <h2>Create Account</h2>
         {loading && (

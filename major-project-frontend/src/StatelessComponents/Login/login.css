@@ -236,3 +236,60 @@
 .signup-link span:hover {
   color: #fff;
 }
+
+/* =========================================
+   FIX 1: THE EYE BUTTON (PASSWORD TOGGLE)
+   ========================================= */
+
+/* Make the container relative so the button can float inside it */
+.password-input-container {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+/* Add padding to the right so your password doesn't type OVER the eye icon */
+.password-input-container input {
+  width: 100%;
+  padding-right: 45px !important; 
+}
+
+/* Force the eye button to float perfectly centered on the right side */
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%); /* Perfectly vertically centers it */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #666; /* Adjust color to match your theme */
+  z-index: 10;
+}
+
+.password-toggle-btn:hover {
+  color: #111;
+}
+
+/* =========================================
+   FIX 2: BRING BACK THE BUBBLES
+   ========================================= */
+
+/* Force the page to take up the full screen and stay behind the card */
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden; /* Stops the screen from scrolling if bubbles hit the edge */
+  background-color: transparent !important; /* Ensures it doesn't paint over the bubbles */
+}
+
+/* Make sure the login form stays on top of the bubbles */
+.login-card {
+  position: relative;
+  z-index: 10; 
+}
