@@ -1,16 +1,17 @@
 .signup-page {
-    height: 100vh;
+    min-height: 100vh;
     width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
     font-family: 'Poppins', sans-serif;
-    overflow: hidden;    /* No scrolling on main container for desktop */
+    /* REMOVED: overflow: hidden; -> This is what was causing the mobile bug! */
+    overflow-y: auto; 
     background: radial-gradient(circle at 60% 40%, #26d0ce 0%, #1a2980 100%);
     animation: hypnotic-bg 8s linear infinite alternate;
     position: relative;
+    padding: 20px 0; /* Adds breathing room to top and bottom */
   }
-  
   
   @keyframes hypnotic-spin {
     0% {
@@ -22,45 +23,22 @@
       transform: rotate(360deg) scale(1.05);
     }
   }
+  
   .signup-card {
     position: relative;
     z-index: 1;
-    background: linear-gradient(135deg, #26d0ce 0%, #1a2980 100%); /* Green-blue gradient */
+    background: linear-gradient(135deg, #26d0ce 0%, #1a2980 100%);
     padding: 40px 30px;
     border-radius: 18px;
     box-shadow: 0 8px 32px rgba(26,41,128,0.18);
     width: 100%;
-    max-width: 720px; /* Increased width to accommodate horizontal layout */
+    max-width: 720px;
     text-align: center;
     border: 1.5px solid rgba(255,255,255,0.13);
     margin: 0 auto;
   }
-    @media (max-width: 700px) {
-    .signup-card {
-      width: 95vw;
-      min-width: 0;
-      max-width: 95vw;
-      padding: 25px 15px;
-      background: linear-gradient(135deg, #26d0ce 0%, #1a2980 100%); /* Green-blue gradient for mobile */
-    }
-    
-    /* Add mobile-only scroll when needed */
-    .signup-page {
-      height: auto;
-      min-height: 100vh;
-      overflow-y: auto;
-    }
-    
-    /* Return to vertical layout on mobile */
-    .patient-fields {
-      flex-direction: column;
-      gap: 10px;
-    }
-    
-    .patient-fields .form-group {
-      width: 100%;
-    }
-  }    .signup-card h2 {
+  
+  .signup-card h2 {
     margin-bottom: 25px;
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -71,43 +49,20 @@
     letter-spacing: 0.5px;
   }
   
-  @media (max-width: 480px) {
-    .signup-card h2 {
-      font-size: 1.8rem;
-      margin-bottom: 15px;
-    }
-  }
-  
   @keyframes pop-up {
-    0% {
-      opacity: 0;
-      transform: scale(0.7) translateY(30px);
-    }
-    60% {
-      opacity: 1;
-      transform: scale(1.1) translateY(-8px);
-    }
-    80% {
-      transform: scale(0.95) translateY(2px);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    0% { opacity: 0; transform: scale(0.7) translateY(30px); }
+    60% { opacity: 1; transform: scale(1.1) translateY(-8px); }
+    80% { transform: scale(0.95) translateY(2px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   @keyframes heading-gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
-    .signup-card input,
+  
+  .signup-card input,
   .signup-card select {
     width: 100%;
     padding: 12px 14px;
@@ -131,7 +86,6 @@
     text-align: left;
   }
 
-  /* Two column layout for form fields */
   .form-row {
     display: flex;
     gap: 20px;
@@ -140,8 +94,9 @@
 
   .form-col {
     flex: 1;
-    min-width: 0; /* Prevent overflow issues */
+    min-width: 0;
   }
+
   .form-group label {
     display: block;
     margin-bottom: 6px;
@@ -172,12 +127,14 @@
     border-color: #dc3545 !important;
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
   }
-.doctor-fields {
+
+  .doctor-fields {
     margin-bottom: 20px;
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
   }
+
   .form-select {
     width: 100%;
     padding: 12px 14px;
@@ -188,8 +145,6 @@
     background-color: rgba(255, 255, 255, 0.15);
     color: white;
     transition: all 0.3s ease;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
@@ -198,17 +153,13 @@
     cursor: pointer;
   }
   
-  /* Style for dropdown options */
   .signup-card select option {
     background-color: #1a2980;
     color: white;
     padding: 12px;
   }
   
-  /* Fix for Firefox and other browsers */
-  .signup-card select::-ms-expand {
-    display: none;
-  }
+  .signup-card select::-ms-expand { display: none; }
   
   .signup-card select:focus {
     border-color: rgba(255, 255, 255, 0.8);
@@ -221,28 +172,6 @@
     margin-bottom: 15px;
   }
   
-  @media (max-width: 480px) {
-    .doctor-fields,
-    .patient-fields {
-      padding: 15px 10px;
-      margin-bottom: 15px;
-    }
-    
-    .doctor-fields h3 {
-      margin-bottom: 10px;
-      font-size: 1.1rem;
-    }
-    
-    .form-group {
-      margin-bottom: 10px;
-    }
-    
-    /* Stack form fields on smaller screens */
-    .form-row {
-      flex-direction: column;
-      gap: 10px;
-    }
-  }
   .button-container {
     display: flex;
     flex-direction: column;
@@ -255,7 +184,8 @@
     width: 60%;
     margin-bottom: 10px;
   }
-    .login-link {
+  
+  .login-link {
     margin-top: 10px;
     text-align: center;
     background-color: rgba(255, 255, 255, 0.2);
@@ -278,15 +208,7 @@
     text-decoration: underline;
     transform: scale(1.05);
   }
-    @media (max-width: 700px) {
-    .button-container {
-      gap: 10px;
-    }
-    
-    .signup-button {
-      width: 80%;
-    }
-  }
+  
   .signup-card input:focus,
   .signup-card select:focus {
     border-color: rgba(255, 255, 255, 0.8);
@@ -294,7 +216,8 @@
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
     background-color: rgba(255, 255, 255, 0.25);
   }
-    .signup-card button:not(.password-toggle-btn) {
+  
+  .signup-card button:not(.password-toggle-btn) {
     background-color: #4a00e0;
     color: white;
     padding: 12px 20px;
@@ -309,21 +232,22 @@
   .signup-card button:not(.password-toggle-btn):hover {
     background-color: #3700b3;
   }
-  /* Password input container */  .password-input-container {
+
+  .password-input-container {
     position: relative;
     width: 100%;
   }
   
   .password-input-container input {
-    padding-right: 45px; /* Increased space for the eye icon */
+    padding-right: 45px; 
   }
   
-  /* To prevent button from being affected by input styles */
   .password-input-container button {
     background-color: transparent !important;
     box-shadow: none !important;
   }
-    .password-toggle-btn {
+  
+  .password-toggle-btn {
     position: absolute;
     right: 8px;
     top: 50%;
@@ -352,77 +276,109 @@
     background-color: transparent;
   }
 
-  /* Additional responsive styles for better mobile experience */
   @keyframes hypnotic-bg {
-    0% {
-      background-position: 0% 50%;
-    }
-    100% {
-      background-position: 100% 50%;
-    }
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
   }
   
   @keyframes gradient-move {
-    0% {
-      background-position: 0% 50%;
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* =========================================
+     MOBILE RESPONSIVENESS (SCROLL FIX)
+     ========================================= */
+  @media (max-width: 700px) {
+    .signup-page {
+      height: auto;
+      min-height: 100vh;
+      overflow-y: auto !important; /* Force scrolling on mobile */
+      align-items: flex-start; /* Push card to top so it's not hidden */
+      padding: 15px; 
     }
-    50% {
-      background-position: 100% 50%;
+
+    .signup-card {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      padding: 25px 15px;
+      margin-top: 10px; /* Space at top */
+      margin-bottom: 30px; /* Space at bottom so it doesn't get cut off */
     }
-    100% {
-      background-position: 0% 50%;
+    
+    .patient-fields {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .patient-fields .form-group { width: 100%; }
+    
+    .button-container { gap: 10px; }
+    
+    .signup-button { width: 80%; }
+  }
+
+  @media (max-width: 480px) {
+    .signup-card h2 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+    }
+    .doctor-fields,
+    .patient-fields {
+      padding: 15px 10px;
+      margin-bottom: 15px;
+    }
+    .doctor-fields h3 {
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+    .form-group { margin-bottom: 10px; }
+    .form-row {
+      flex-direction: column;
+      gap: 10px;
     }
   }
 
   @media (max-width: 380px) {
-    .signup-card {
-      padding: 20px 15px;
-    }
-    
+    .signup-card { padding: 20px 15px; }
     .signup-card input,
     .signup-card select {
       padding: 10px;
       font-size: 14px;
       margin-bottom: 3px;
     }
-    
     .signup-card button {
       padding: 10px 16px;
       font-size: 14px;
     }
-    
     .form-group label {
       font-size: 13px;
       margin-bottom: 4px;
     }
   }
-  /* Ensure form elements are properly displayed on iOS Safari */
+
   @supports (-webkit-touch-callout: none) {
     .signup-card input,
-    .signup-card select {
-      font-size: 16px; /* Prevents auto-zoom on iOS */
-    }
-    
-    /* Fix for date inputs on iOS */
+    .signup-card select { font-size: 16px; }
     input[type="date"] {
       appearance: none;
       -webkit-appearance: none;
-      padding-right: 25px; /* Space for calendar icon */
+      padding-right: 25px; 
     }
   }
   
-  /* Responsive adjustments for different screen heights */
   @media (max-height: 800px) and (min-width: 701px) {
     .signup-card {
       transform: scale(0.9);
-      transform-origin: center center;
+      transform-origin: center top; /* Start scale from top */
     }
   }
   
-  /* Even smaller for very short screens */
   @media (max-height: 700px) and (min-width: 701px) {
     .signup-card {
       transform: scale(0.85);
-      transform-origin: center center;
+      transform-origin: center top;
     }
   }
