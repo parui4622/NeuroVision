@@ -270,11 +270,7 @@ const Dashboard = () => {
               {message}
             </p>
           )}
-          {isLoading && (
-            <p className="upload-message upload-message--info">
-              Processing your image...
-            </p>
-          )}
+          
           <div onClick={handleGetStarted}>
             <Button className="upload-section__save">{isLoading ? "Processing..." : "Get Started"}</Button>
           </div>
