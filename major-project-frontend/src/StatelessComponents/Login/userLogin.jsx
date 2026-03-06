@@ -23,7 +23,7 @@ const UserLogin = () => {
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(()=> {
-    const tier = setTimeout(() => setIsMounted(true), 100);
+    const tier = setTimeout(() => setIsMounted(true), 300);
     return () => clearTimeout(timer);
   }, []);
 
@@ -132,7 +132,7 @@ const UserLogin = () => {
             wallBounce={0.95}
             followCursor={true}
             colors={[0x1a2980, 0x26d0ce, 0xffffff]}
-            style={{width: '100%', height: '100%'}}
+            style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0}}
           />
         </div>
       )}
