@@ -1,70 +1,45 @@
-const { spawn } = require('child_process');
-const path = require('path');
-
 const predict = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No image file provided' });
         }
 
+        // 1. Convert the image to base64
         const imageData = req.file.buffer.toString('base64');
+        console.log('Image data received. Forwarding to Hugging Face AI Server...');
 
-        console.log('Image data received, processing...');
-        console.log('Preparing to run prediction Python script...');
-        
-        const pythonExecutable = process.platform === 'win32' ? 'python' : 'python3';
-        const pythonScript = path.join(__dirname, '../python/predict.py');
+        // 2. The direct API URL to my new 16GB RAM Hugging Face Server
+        const hfApiUrl = 'https://saurav4622-neurovision-ai.hf.space/predict';
 
-        // Create JSON input for Python script
-        const inputData = JSON.stringify({ image: imageData });
-        const pythonProcess = spawn(pythonExecutable, [pythonScript, inputData]);
-
-        let outputData = '';
-        let errorData = '';
-
-        pythonProcess.stdout.on('data', (data) => {
-            outputData += data.toString();
+        // 3. Send the image to Hugging Face via standard HTTP POST
+        const response = await fetch(hfApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image: imageData })
         });
 
-        pythonProcess.stderr.on('data', (data) => {
-            errorData += data.toString();
-        });
-
-        pythonProcess.on('close', (code) => {
-            console.log('Python script finished with code:', code);
-            console.log('Python script stderr:', errorData);
-
-            try {
-                // Extract the last JSON object from stdout
-                const jsonObjects = outputData.split('\n').filter(line => {
-                    try {
-                        JSON.parse(line);
-                        return true;
-                    } catch {
-                        return false;
-                    }
-                });
-
-                const result = JSON.parse(jsonObjects.pop());
-                res.status(200).json(result);
-            } catch (err) {
-                console.error('Error parsing Python script output:', err);
-                res.status(500).json({ error: 'Failed to parse prediction result', details: err.message });
-            }
-        });
-
-        pythonProcess.on('error', (error) => {
-            console.error('Failed to start Python process:', error);
-            res.status(500).json({ 
-                error: 'Failed to start prediction process',
-                details: error.message
+        // 4. Handle any errors from Hugging Face
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Hugging Face AI Server Error:', errorText);
+            return res.status(response.status).json({ 
+                error: 'AI Server Error', 
+                details: errorText 
             });
-        });
+        }
+
+        // 5. Get the prediction result and send it back to the frontend
+        const result = await response.json();
+        console.log('SUCCESS! Prediction received from Hugging Face:', result);
+        
+        res.status(200).json(result);
 
     } catch (error) {
-        console.error('Error during prediction:', error);
+        console.error('Error during prediction routing:', error);
         res.status(500).json({ 
-            error: 'Internal server error',
+            error: 'Internal server error while contacting AI',
             details: error.message
         });
     }
