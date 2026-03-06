@@ -20,7 +20,13 @@ const UserLogin = () => {
   const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
+  useEffect(()=> {
+    const tier = setTimeout(() => setIsMounted(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     const rememberedEmail = localStorage.getItem('rememberedEmail');
     const rememberedRole = localStorage.getItem('rememberedRole');
@@ -117,15 +123,19 @@ const UserLogin = () => {
 
   return (
     <div className="login-page">
-      <Ballpit
-        count={200}
-        gravity={0.7}
-        friction={0.8}
-        wallBounce={0.95}
-        followCursor={true}
-        colors={[0x1a2980, 0x26d0ce, 0xffffff]}
-        style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0}}
-      />
+      {isMounted && (
+        <div style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0}}>
+          <Ballpit
+            count={200}
+            gravity={0.7}
+            friction={0.8}
+            wallBounce={0.95}
+            followCursor={true}
+            colors={[0x1a2980, 0x26d0ce, 0xffffff]}
+            style={{width: '100%', height: '100%'}}
+          />
+        </div>
+      )}
       <div className="login-card animated-card" style={{zIndex: 2, position: 'relative'}}>
         <h2 className="animated-text">Login</h2>
         
