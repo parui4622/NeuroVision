@@ -9,17 +9,18 @@ import base64
 import io
 import logging
 import warnings
+import gc  # Added for aggressive memory cleanup
 
 # Configure logging to stderr
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 # Suppress specific warnings from torchvision
-warnings.filterwarnings("ignore", category=UserWarning, module="torchvision.models._utils")
+warnings.filterwarnings("ignore", category=UserWarning)
 
-# Use ResNet50 architecture as shown in the screenshot
 def create_model(num_classes):
-    # Load pretrained ResNet50
-    model = models.resnet50(pretrained=True)
+    # CRUCIAL MEMORY FIX: Set pretrained=False. 
+    # This prevents loading a 100MB unused model into RAM before loading your custom weights.
+    model = models.resnet50(pretrained=False)
     
     # Modify final layer
     num_ftrs = model.fc.in_features
@@ -29,70 +30,22 @@ def create_model(num_classes):
 
 def process_image(image_data):
     try:
-        # Handle potential padding in base64 data
         if ',' in image_data:
-            # Extract only the base64 part if it has a data URL prefix
             image_data = image_data.split(',', 1)[1]
             
-        # Convert base64 to PIL Image
         image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         
-        # Define the same transforms used during training with ResNet50
         transform = transforms.Compose([
-            transforms.Resize((224, 224)),  # ResNet50 expects 224x224 images
+            transforms.Resize((224, 224)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # ImageNet normalization
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         
-        # Add batch dimension
         return transform(image).unsqueeze(0)
     except Exception as e:
-        print(f"Error processing image: {str(e)}")
-        raise Exception(f"Failed to process image: {str(e)}")
-
-def load_model():
-    # Create the same ResNet50 architecture used for training
-    model = create_model(num_classes=3)  # 3 classes: AD, CN, MCI
-    
-    import os
-    # Print current working directory for debugging
-    print("Current working directory:", os.getcwd())
-    model_path = os.path.join(os.path.dirname(__file__), 'resnet50_alzheimer_model.pth')
-    print("Looking for model at:", model_path)
-    
-    # Load the trained model weights
-    # Using map_location to ensure it works without GPU
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-    
-    # Set model to evaluation mode
-    model.eval()
-    return model
-
-def predict(image_tensor):
-    model = load_model()
-    
-    # Send model input to device (CPU in this case)
-    device = torch.device('cpu')
-    model = model.to(device)
-    image_tensor = image_tensor.to(device)
-    
-    with torch.no_grad():
-        outputs = model(image_tensor)
-        probabilities = torch.nn.functional.softmax(outputs, dim=1)[0]
-        _, predicted = torch.max(outputs, 1)
-        
-    classes = ['AD', 'CN', 'MCI']  # Make sure this matches your model's output classes
-    
-    # Get probabilities for each class
-    class_probabilities = {}
-    for i, cls in enumerate(classes):
-        class_probabilities[cls] = float(probabilities[i])
-        
-    return {
-        'prediction': classes[predicted.item()],
-        'probabilities': class_probabilities
-    }
+        logging.error(f"Error processing image: {str(e)}")
+        sys.exit(1)
 
 def main():
     try:
@@ -100,25 +53,40 @@ def main():
         input_data = json.loads(sys.argv[1])
         image_data = input_data['image']
 
-        # Process image and load model
+        # 1. Process image
         processed_image = process_image(image_data)
-        model = load_model()
 
-        # Perform prediction
+        # 2. Load Model directly to CPU
+        import os
+        model = create_model(num_classes=3)
+        model_path = os.path.join(os.path.dirname(__file__), 'resnet50_alzheimer_model.pth')
+        
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
         model.eval()
+
+        # 3. Perform prediction (no_grad prevents memory usage from tracking gradients)
         with torch.no_grad():
             outputs = model(processed_image)
+            probabilities = outputs.softmax(dim=1)[0]
             _, predicted = torch.max(outputs, 1)
 
         # Map prediction to class labels
         class_labels = ['AD', 'CN', 'MCI']
         result = {
             'prediction': class_labels[predicted.item()],
-            'confidence': outputs.softmax(dim=1).tolist()
+            'confidence': probabilities.tolist()
         }
+
+        # 4. AGGRESSIVE MEMORY CLEANUP 
+        # Delete heavy variables and force RAM to clear before returning to Node.js
+        del model
+        del processed_image
+        del outputs
+        gc.collect()
 
         # Output result as JSON
         print(json.dumps(result))
+        
     except Exception as e:
         logging.error(f"Error during prediction: {str(e)}")
         sys.exit(1)
