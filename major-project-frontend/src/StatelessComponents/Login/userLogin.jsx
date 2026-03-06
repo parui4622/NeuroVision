@@ -23,7 +23,7 @@ const UserLogin = () => {
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(()=> {
-    const tier = setTimeout(() => setIsMounted(true), 300);
+    const timer = setTimeout(() => setIsMounted(true), 300);
     return () => clearTimeout(timer);
   }, []);
 
