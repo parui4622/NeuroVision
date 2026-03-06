@@ -6,10 +6,12 @@ exports.generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Setup email transporter
+// Setup email transporter (Render Firewall Bypass)
 const getTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // Use strict SSL to bypass port 587 blocking
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
