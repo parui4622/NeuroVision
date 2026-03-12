@@ -1,4 +1,3 @@
-```markdown
 # 🧠 NeuroVision: Alzheimer's Detection System
 
 A modern web-based application for early detection and monitoring of Alzheimer's disease using deep learning and medical imaging analysis.
@@ -197,6 +196,3 @@ For any queries regarding this project, please contact:
 ---
 
 © 2026 NeuroVision Team. All rights reserved.
-
-```
-```
