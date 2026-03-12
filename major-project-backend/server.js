@@ -11,7 +11,8 @@ mongoose.set('strictQuery', false);
 // Import app.js which contains all route configurations
 const app = require('./app');
 
-// No need to configure routes here - they are already configured in app.js
+const app = express();
+app.set('trust proxy',1);
 
 // Connect to MongoDB with proper configurations
 mongoose.connect(config.MONGODB_URI, config.DB_OPTIONS)
