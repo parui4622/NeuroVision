@@ -1,17 +1,31 @@
 .signup-page {
-    min-height: 100vh;
-    width: 100vw;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Poppins', sans-serif;
-    /* REMOVED: overflow: hidden; -> This is what was causing the mobile bug! */
-    overflow-y: auto; 
-    background: radial-gradient(circle at 60% 40%, #26d0ce 0%, #1a2980 100%);
-    animation: hypnotic-bg 8s linear infinite alternate;
-    position: relative;
-    padding: 20px 0; /* Adds breathing room to top and bottom */
-  }
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 40px 20px; /* Gives breathing room on mobile */
+  overflow-y: auto; 
+  overflow-x: hidden;
+  background: radial-gradient(circle at 60% 40%, #26d0ce 0%, #1a2980 100%);
+  animation: hypnotic-bg 8s linear infinite alternate;
+  position: relative;
+}
+  
+.signup-card {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(135deg, #26d0ce 0%, #1a2980 100%);
+  padding: 40px 30px;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(26,41,128,0.18);
+  width: 100%;
+  max-width: 720px;
+  text-align: center;
+  border: 1.5px solid rgba(255,255,255,0.13);
+  /* The Magic Fix: margin: auto perfectly centers it if there is room, but allows scrolling if there isn't */
+  margin: auto; 
+}
   
   @keyframes hypnotic-spin {
     0% {
@@ -24,7 +38,7 @@
     }
   }
   
-  .signup-card {
+  /* .signup-card {
     position: relative;
     z-index: 1;
     background: linear-gradient(135deg, #26d0ce 0%, #1a2980 100%);
@@ -36,7 +50,7 @@
     text-align: center;
     border: 1.5px solid rgba(255,255,255,0.13);
     margin: 0 auto;
-  }
+  } */
   
   .signup-card h2 {
     margin-bottom: 25px;

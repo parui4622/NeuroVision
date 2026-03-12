@@ -1,6 +1,6 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import toast, { Toaster } from "react-hot-toast"; // <-- 1. Imported the toast library
+import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import SignupLoader from "../../StatefullComponents/SignupLoader/SignupLoader";
 import { API_BASE_URL } from "../../utils/apiConfig";
