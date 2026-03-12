@@ -10,6 +10,7 @@ const passwordResetRoutes = require('./routes/passwordReset');
 const doctorRoutes = require('./routes/doctor');
 
 const app = express();
+app.set('trust proxy',1);
 
 // We'll populate CSP after we know allowedOrigins, so define a function we can call after
 const helmetMiddleware = (connectSrc) => helmet({

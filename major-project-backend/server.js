@@ -11,9 +11,6 @@ mongoose.set('strictQuery', false);
 // Import app.js which contains all route configurations
 const app = require('./app');
 
-const app = express();
-app.set('trust proxy',1);
-
 // Connect to MongoDB with proper configurations
 mongoose.connect(config.MONGODB_URI, config.DB_OPTIONS)
   .then(() => {
@@ -40,8 +37,6 @@ mongoose.connection.on('error', (err) => {
 mongoose.connection.on('disconnected', () => {
   console.log('Mongoose disconnected from MongoDB');
 });
-
-// App is already imported at the top of the file
 
 // Add health check route
 app.get('/health', (req, res) => {
