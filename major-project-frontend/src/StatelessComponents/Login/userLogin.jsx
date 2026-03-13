@@ -19,7 +19,7 @@ const UserLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isWakingUp, setIsWakingUp] = useState(false); // Tracks if server is slow
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -55,7 +55,6 @@ const UserLogin = () => {
     setIsLoading(true);
     setIsWakingUp(false);
 
-    // If Render free tier is asleep, it takes a long time. Alert the user after 4 seconds.
     const wakeUpTimer = setTimeout(() => {
       setIsWakingUp(true);
       setMessage("Waking up secure server. This may take up to 45 seconds...");
@@ -66,12 +65,12 @@ const UserLogin = () => {
       const encrypted = await encryptPayload({ email, password, role });
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
-        credentials: 'include',
+        credentials: 'include', // Automatically receives the httpOnly cookie
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(encrypted)
       });
       
-      clearTimeout(wakeUpTimer); // Server responded, stop the timer!
+      clearTimeout(wakeUpTimer);
       const data = await response.json();
       
       if (!response.ok) {
@@ -90,8 +89,6 @@ const UserLogin = () => {
         return;
       }
       
-      // STRICT ROLE CHECK
-      // Blocks the login if the dropdown selection doesn't match the database role
       if (data.user.role !== role) {
         setError(role === 'admin'
           ? 'Access Denied - Administrative privileges required'
@@ -100,35 +97,43 @@ const UserLogin = () => {
         return; 
       }
       
-      auth.setAuthData(null, data.user);
+      // SECURE STORAGE: We ONLY store the non-sensitive UI user object. 
+      // The JWT token is safely locked in the browser's httpOnly cookie vault.
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
+      // Pass null for the token since we don't handle it in JS anymore
+      auth.setAuthData(null, data.user); 
       
       if (isRememberMeChecked) {
         auth.setRememberMe(email, role);
       }
       
-      // EXPLICIT ROUTING 
-      // Guarantees the redirect happens successfully based on the exact role
-      if (role === 'admin') {
-        navigate('/admin');
-        return;
-      } 
-      
-      if (role === 'doctor') {
-        navigate('/doctor');
-        return;
-      }
-      
-      if (role === 'patient') {
-        setError("");
-        setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo?.serial || 'Unknown'}`);
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
-        return;
-      }
+      // RACE-CONDITION FIX: 100ms delay ensures React state updates before routing
+      setTimeout(() => {
+        if (role === 'admin') {
+          navigate('/admin');
+          return;
+        } 
+        
+        if (role === 'doctor') {
+          navigate('/doctor');
+          return;
+        }
+        
+        if (role === 'patient') {
+          setError("");
+          setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo?.serial || 'Unknown'}`);
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 3000);
+          return;
+        }
+      }, 100);
 
     } catch (err) {
-      clearTimeout(wakeUpTimer); // Stop timer on network error
+      clearTimeout(wakeUpTimer);
       const errData = err.response?.data;
       if (errData?.requiresVerification && errData?.email) {
         navigate('/verify-otp', { state: { email: errData.email } });

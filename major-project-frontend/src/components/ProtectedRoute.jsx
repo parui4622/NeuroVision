@@ -9,16 +9,16 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
   const location = useLocation();
 
   useEffect(() => {
-    let isMounted = true; // Prevents memory leaks
+    let isMounted = true; 
 
     const validateSession = async () => {
       try {
-        const token = localStorage.getItem('token');
         const storedUserString = localStorage.getItem('user');
         const storedUser = storedUserString ? JSON.parse(storedUserString) : null;
 
-        // 1. Handle developer bypass token
-        if (token === 'dev-bypass-token' && storedUser) {
+        // Developer bypass (optional, ignores secure cookie for local dev)
+        const devToken = localStorage.getItem('token');
+        if (devToken === 'dev-bypass-token' && storedUser) {
           if (isMounted) {
             setUser(storedUser);
             setIsAuthenticated(true);
@@ -27,21 +27,12 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
           return;
         }
 
-        // 2. We MUST have a token or we fail immediately
-        if (!token) {
-          if (isMounted) {
-            setIsAuthenticated(false);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // 3. Validate session with backend
+        // Validate session entirely via httpOnly cookie.
+        // We do NOT send an Authorization header; the browser attaches the cookie automatically.
         const response = await fetch(`${API_BASE_URL}/api/auth/validate-session`, {
           method: 'GET',
-          credentials: 'include',
+          credentials: 'include', 
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
@@ -51,24 +42,20 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
           if (isMounted) {
             setUser(data.user);
             setIsAuthenticated(true);
-            // Save fresh user data just in case
             localStorage.setItem('user', JSON.stringify(data.user)); 
           }
         } else {
           if (isMounted) {
-            localStorage.removeItem('token');
+            // Backend rejected cookie (expired or invalid), so clear UI data
             localStorage.removeItem('user');
             setIsAuthenticated(false);
           }
         }
       } catch (error) {
-        console.error('Session validation error:', error);
         if (isMounted) {
           setIsAuthenticated(false);
         }
       } finally {
-        // 4. Finally block ensures loading is ALWAYS set to false, 
-        // but only after all state updates above are queued.
         if (isMounted) {
           setLoading(false);
         }
@@ -78,14 +65,11 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
     validateSession();
     
     return () => {
-      isMounted = false; // Cleanup function
+      isMounted = false; 
     };
-  }, []); // Run once on mount
-
-  // === RENDERING LOGIC ===
+  }, []); 
 
   if (loading) {
-    // Return a better looking loader so the screen doesn't just flash white
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#062859', color: 'white' }}>
         <h2>Verifying Secure Session...</h2>
@@ -93,15 +77,11 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
     );
   }
 
-  // If not authenticated, kick to login
   if (!isAuthenticated || !user) {
-    // Pass the attempted URL so we could potentially redirect them back later
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If specific roles are required, check user's role
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    // If they are logged in but tried to go to the wrong dashboard, send them to their correct one
     switch (user.role) {
       case 'admin':
         return <Navigate to="/admin" replace />;
@@ -114,7 +94,6 @@ const ProtectedRoute = ({ element: Component, allowedRoles = [] }) => {
     }
   }
 
-  // If they passed all checks, render the protected component!
   return Component;
 };
 

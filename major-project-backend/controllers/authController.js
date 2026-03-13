@@ -1,256 +1,318 @@
-import { Eye, EyeOff } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Ballpit from "../../StatefullComponents/BallPitBg/BallPit.jsx";
-import Button from "../../StatefullComponents/ButtonLogin/LoginButton.jsx";
-import { API_BASE_URL } from "../../utils/apiConfig";
-import { useAuth } from "../../utils/authHelpers";
-import { encryptPayload } from "../../utils/crypto";
-import "./login.css";
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const PendingUser = require('../models/PendingUser');
+const Session = require('../models/Session');
+const { config } = require('../config');
 
-const UserLogin = () => {
-  const navigate = useNavigate();
-  const auth = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("patient");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordAttempts, setPasswordAttempts] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isWakingUp, setIsWakingUp] = useState(false);
-  const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(()=> {
-    const timer = setTimeout(() => setIsMounted(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    const rememberedRole = localStorage.getItem('rememberedRole');
-    
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setIsRememberMeChecked(true);
-    }
-    
-    if (rememberedRole) {
-      setRole(rememberedRole);
-    }
-  }, [navigate, auth]);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setMessage("");
-    
-    if (!email || !password) {
-      setError("Please enter your email and password");
-      return;
-    }
-
-    setIsLoading(true);
-    setIsWakingUp(false);
-
-    const wakeUpTimer = setTimeout(() => {
-      setIsWakingUp(true);
-      setMessage("Waking up secure server. This may take up to 45 seconds...");
-    }, 4000);
-
-    try {
-      const apiUrl = API_BASE_URL;
-      const encrypted = await encryptPayload({ email, password, role });
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(encrypted)
-      });
-      
-      clearTimeout(wakeUpTimer);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        if (data.requiresVerification && data.email) {
-          navigate('/verify-otp', { state: { email: data.email } });
-          return;
-        }
-        const backendError = data.error || data.message || 'Login failed. Please check your credentials.';
-        if (response.status === 401 && /invalid password/i.test(backendError)) {
-          const attempts = passwordAttempts + 1;
-          setPasswordAttempts(attempts);
-          setError(attempts >= 3 ? "Too many failed attempts. Please reset your password." : `Invalid password - Attempt ${attempts} of 3`);
-          return;
-        }
-        setError(backendError);
-        return;
-      }
-      
-      // STRICT ROLE CHECK
-      if (data.user.role !== role) {
-        setError(role === 'admin'
-          ? 'Access Denied - Administrative privileges required'
-          : `Access Denied - This account is registered as a ${data.user.role}, not a ${role}`
-        );
-        return; 
-      }
-      
-      // FIX: Store the newly transmitted token so ProtectedRoute can see it
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
-      
-      auth.setAuthData(null, data.user);
-      
-      if (isRememberMeChecked) {
-        auth.setRememberMe(email, role);
-      }
-      
-      // EXPLICIT ROUTING 
-      if (role === 'admin') {
-        navigate('/admin');
-        return;
-      } 
-      
-      if (role === 'doctor') {
-        navigate('/doctor');
-        return;
-      }
-      
-      if (role === 'patient') {
-        setError("");
-        setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo?.serial || 'Unknown'}`);
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
-        return;
-      }
-
-    } catch (err) {
-      clearTimeout(wakeUpTimer);
-      const errData = err.response?.data;
-      if (errData?.requiresVerification && errData?.email) {
-        navigate('/verify-otp', { state: { email: errData.email } });
-        return;
-      }
-      setError(errData?.error || errData?.message || err.message || 'An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-      setIsWakingUp(false);
-    }
-  };
-
-  return (
-    <div className="login-page">
-      {isMounted && (
-        <div style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0}}>
-          <Ballpit
-            count={200}
-            gravity={0.7}
-            friction={0.8}
-            wallBounce={0.95}
-            followCursor={true}
-            colors={[0x1a2980, 0x26d0ce, 0xffffff]}
-            style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0}}
-          />
-        </div>
-      )}
-      <div className="login-card animated-card" style={{zIndex: 2, position: 'relative'}}>
-        <h2 className="animated-text">Login</h2>
-        
-        {error && <div className="error-message animated-error">{error}</div>}        
-        {message && (
-          <div className={`success-message animated-success ${message.includes('Patient ID:') ? 'patient-id-message' : isWakingUp ? 'wakeup-message' : ''}`}
-               style={isWakingUp ? { backgroundColor: 'rgba(52, 152, 219, 0.2)', borderLeft: '4px solid #3498db', color: '#3498db' } : {}}>
-            {message.includes('Patient ID:') ? (
-              <>
-                <span>Login successful!</span>
-                <div style={{margin: '10px 0 5px'}}>Your Patient ID:</div>
-                <strong>{message.split('Patient ID:')[1].trim()}</strong>
-              </>
-            ) : (
-              message
-            )}
-          </div>
-        )}
-        
-        <form onSubmit={handleLogin} autoComplete="off">
-          <input
-            type="email"
-            placeholder="Enter Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="animated-input"
-            autoComplete="username"
-            inputMode="email"
-          />
-          <div className="password-input-container">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="animated-input"
-              autoComplete="current-password"
-            />
-            <button 
-              type="button"
-              className="password-toggle-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff size={18} opacity={0.8} /> : <Eye size={18} opacity={0.8} />}
-            </button>
-          </div>
-          
-          <select 
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value);
-              setError("");
-            }}
-            className="role-select animated-input"
-          >
-            <option value="patient">Patient</option>
-            <option value="doctor">Doctor</option>
-            <option value="admin">Admin</option>
-          </select>
-          
-          <div className="login-options">
-            <div className="remember-me">
-              <input 
-                type="checkbox" 
-                id="rememberMe"
-                checked={isRememberMeChecked}
-                onChange={(e) => {
-                  setIsRememberMeChecked(e.target.checked);
-                  if (e.target.checked) {
-                    auth.setRememberMe(email, role);
-                  } else {
-                    auth.clearRememberMe();
-                  }
-                }}
-              />
-              <label htmlFor="rememberMe">Remember Me</label>
-            </div>
-            <div className="forgot-password">
-              <span onClick={() => navigate('/forgot-password')}>Forgot Password?</span>
-            </div>
-          </div>          
-          
-          <div className="login-btn-container">
-            <Button type="submit" isLoading={isLoading} />
-          </div>
-          
-          <div className="signup-link">
-            <p>Don't have an account? <span onClick={() => navigate('/signup')}>Sign Up</span></p>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+function generatePatientSerial() {
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
+    return `PAT-${date}-${rand}`;
 }
-export default UserLogin;
+
+const emailService = require('../utils/emailService');
+
+function maskEmail(email) {
+    if (!email) return '';
+    const [name, domain] = email.split('@');
+    const maskedName = name.length <= 2 ? name[0] + '*' : name[0] + '***' + name.slice(-1);
+    const [d1, d2] = (domain || '').split('.');
+    const maskedDomain = d1 ? d1[0] + '***' + (d1.slice(-1) || '') : '';
+    return `${maskedName}@${maskedDomain}.${d2 || ''}`;
+}
+
+exports.signup = async (req, res) => {
+    try {
+        const { name, email, password, role = 'patient', patientInfo } = req.body;
+
+        if (!email || !password || !name) {
+            return res.status(400).json({ success: false, error: "Please provide all required fields" });
+        }
+
+        let patientInfoToSave = patientInfo;
+        if (role === 'patient') {
+            if (!patientInfo || !patientInfo.dateOfBirth) {
+                return res.status(400).json({ error: 'Date of birth is required for patients.' });
+            }
+            patientInfoToSave = { ...patientInfo, serial: generatePatientSerial() };
+        }
+
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                error: "Email already registered",
+                message: "An account with this email already exists. Please login instead or use a different email."
+            });
+        }
+
+        let pending = await PendingUser.findOne({ email: email.toLowerCase() });
+        if (pending) {
+            await PendingUser.deleteOne({ _id: pending._id });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const otp = emailService.generateOTP();
+
+        const pendingUser = new PendingUser({
+            name,
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            otp,
+            role,
+            patientInfo: patientInfoToSave
+        });
+        await pendingUser.save();
+
+        try {
+            await emailService.sendOTPEmail(email, name, otp);
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError.message);
+            await PendingUser.deleteOne({ _id: pendingUser._id });
+            return res.status(500).json({
+                success: false,
+                error: "Email service is not configured properly. User registration requires email verification.",
+                details: emailError.message
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent to your email. Please verify to complete registration."
+        });
+    } catch (err) {
+        console.error('Signup error:', err.message);
+        res.status(500).json({ success: false, error: "Internal server error" });
+    }
+};
+
+exports.verifyEmail = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ error: 'Missing required fields: email or otp' });
+        }
+
+        const pendingUser = await PendingUser.findOne({ email: email.toLowerCase() });
+        if (!pendingUser) {
+            return res.status(400).json({ error: 'No pending registration found for this email.' });
+        }
+
+        if (pendingUser.otp !== otp) {
+            return res.status(400).json({ error: 'Invalid OTP.' });
+        }
+
+        const { name, password, role, patientInfo } = pendingUser;
+        const newUser = new User({
+            name,
+            email: email.toLowerCase(),
+            password,
+            isEmailVerified: true,
+            role,
+            patientInfo
+        });
+        await newUser.save();
+        await PendingUser.deleteOne({ _id: pendingUser._id });
+
+        const token = jwt.sign(
+            { userId: newUser._id, role: newUser.role },
+            config.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+        
+        const session = new Session({
+            userId: newUser._id,
+            token,
+            deviceInfo: req.headers['user-agent']
+        });
+        await session.save();
+        
+        const userResponse = newUser.toObject();
+        delete userResponse.password;
+        delete userResponse.emailVerificationOTP;
+        delete userResponse.otpExpiry;
+        
+        newUser.lastActive = new Date();
+        await newUser.save();
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            maxAge: 24 * 60 * 60 * 1000
+        });
+        res.status(200).json({
+            message: "Email verified successfully",
+            user: userResponse,
+            sessionId: session._id,
+            token: token
+        });
+        
+    } catch (error) {
+        console.error('verifyEmail error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+exports.resendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+        
+        const pendingUser = await PendingUser.findOne({ email: email.toLowerCase() });
+        if (!pendingUser) return res.status(400).json({ error: 'No pending registration found.' });
+        
+        const otp = emailService.generateOTP();
+        pendingUser.otp = otp;
+        pendingUser.createdAt = new Date();
+        await pendingUser.save();
+        
+        await emailService.sendOTPEmail(pendingUser.email, pendingUser.name, otp);
+        res.status(200).json({ message: 'OTP has been resent to your email' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.login = async (req, res) => {
+    try {
+        const { email, password, role } = req.body || {};
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+        
+        const normalizedEmail = email.toLowerCase();
+        
+        const pendingUser = await PendingUser.findOne({ email: normalizedEmail }).exec();
+        if (pendingUser) {
+            return res.status(401).json({
+                error: "Email not verified",
+                requiresVerification: true,
+                email: pendingUser.email,
+                userId: pendingUser._id
+            });
+        }
+
+        const foundUser = await User.findOne({ email: normalizedEmail }).exec();
+        
+        if (!foundUser) {
+            return res.status(401).json({ success: false, error: "Invalid email or password" });
+        }
+
+        if (role && foundUser.role.toLowerCase() !== role.toLowerCase()) {
+            return res.status(403).json({ 
+                error: role === 'admin'
+                    ? "Access Denied - Administrative privileges required"
+                    : `Invalid credentials for ${role} access`
+            });
+        }
+
+        const validPassword = await bcrypt.compare(password, foundUser.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: "Invalid email or password" });
+        }
+        
+        if (!foundUser.isEmailVerified) {
+            const otp = emailService.generateOTP();
+            const otpExpiry = new Date();
+            otpExpiry.setMinutes(otpExpiry.getMinutes() + 15);
+            
+            foundUser.emailVerificationOTP = otp;
+            foundUser.otpExpiry = otpExpiry;
+            await foundUser.save();
+            
+            await emailService.sendOTPEmail(email, foundUser.name, otp);
+            
+            return res.status(401).json({
+                error: "Email not verified",
+                requiresVerification: true,
+                email: foundUser.email
+            });
+        }
+
+        foundUser.lastActive = new Date();
+        await foundUser.save();
+
+        const token = jwt.sign(
+            { userId: foundUser._id, role: foundUser.role },
+            config.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        const session = new Session({
+            userId: foundUser._id,
+            token,
+            deviceInfo: req.headers['user-agent']
+        });
+        await session.save();
+
+        const userResponse = foundUser.toObject();
+        delete userResponse.password;
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            maxAge: 24 * 60 * 60 * 1000
+        });
+        
+        res.json({
+            message: "Login successful",
+            user: userResponse,
+            sessionId: session._id,
+            token: token
+        });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.logout = async (req, res) => {
+    try {
+        const token = req.cookies?.token ?? (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null);
+        if (!token) {
+            return res.status(400).json({ error: 'No token provided' });
+        }
+        await Session.findOneAndUpdate({ token }, { isValid: false });
+        res.clearCookie('token');
+        res.json({ message: 'Logged out successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.validateSession = async (req, res) => {
+    try {
+        const token = req.cookies?.token ?? (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null);
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
+        const decoded = jwt.verify(token, config.JWT_SECRET);
+        const session = await Session.findOne({ token, isValid: true });
+
+        if (!session) {
+            return res.status(401).json({ error: 'Session expired or invalid' });
+        }
+
+        const user = await User.findById(decoded.userId).select('-password');
+
+        if (!user) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        session.lastActive = new Date();
+        await session.save();
+
+        res.json({ valid: true, user, sessionId: session._id });
+    } catch (err) {
+        if (err.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
+        if (err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Token expired' });
+        res.status(500).json({ error: err.message });
+    }
+};

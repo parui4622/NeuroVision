@@ -38,11 +38,6 @@ mongoose.connection.on('disconnected', () => {
   console.log('Mongoose disconnected from MongoDB');
 });
 
-// Add health check route
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-});
-
 // Add error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

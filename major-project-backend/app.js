@@ -12,6 +12,11 @@ const doctorRoutes = require('./routes/doctor');
 const app = express();
 app.set('trust proxy',1);
 
+// Add health check route
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 // We'll populate CSP after we know allowedOrigins, so define a function we can call after
 const helmetMiddleware = (connectSrc) => helmet({
   // Keep defaults; we'll add a basic CSP
