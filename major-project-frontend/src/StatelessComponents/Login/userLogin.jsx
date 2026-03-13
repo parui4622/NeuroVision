@@ -19,6 +19,7 @@ const UserLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false); // Tracks if server is slow
   const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -46,14 +47,19 @@ const UserLogin = () => {
     setError("");
     setMessage("");
     
-    // 1. Validate BEFORE setting the loading state
     if (!email || !password) {
       setError("Please enter your email and password");
       return;
     }
 
-    // 2. Now start the loading animation
-    setIsLoading(true); 
+    setIsLoading(true);
+    setIsWakingUp(false);
+
+    // If Render free tier is asleep, it takes a long time. Alert the user after 4 seconds.
+    const wakeUpTimer = setTimeout(() => {
+      setIsWakingUp(true);
+      setMessage("Waking up secure server. This may take up to 45 seconds...");
+    }, 4000);
 
     try {
       const apiUrl = API_BASE_URL;
@@ -65,6 +71,7 @@ const UserLogin = () => {
         body: JSON.stringify(encrypted)
       });
       
+      clearTimeout(wakeUpTimer); // Server responded, stop the timer!
       const data = await response.json();
       
       if (!response.ok) {
@@ -83,12 +90,14 @@ const UserLogin = () => {
         return;
       }
       
+      // STRICT ROLE CHECK
+      // Blocks the login if the dropdown selection doesn't match the database role
       if (data.user.role !== role) {
         setError(role === 'admin'
           ? 'Access Denied - Administrative privileges required'
           : `Access Denied - This account is registered as a ${data.user.role}, not a ${role}`
         );
-        return;
+        return; 
       }
       
       auth.setAuthData(null, data.user);
@@ -97,18 +106,29 @@ const UserLogin = () => {
         auth.setRememberMe(email, role);
       }
       
-      if (data.user.role === 'patient' && data.user.patientInfo && data.user.patientInfo.serial) {
-        setError("");
-        setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo.serial}`);
-        setTimeout(() => {
-          auth.redirectBasedOnRole(data.user.role);
-        }, 3000);
+      // EXPLICIT ROUTING 
+      // Guarantees the redirect happens successfully based on the exact role
+      if (role === 'admin') {
+        navigate('/admin');
+        return;
+      } 
+      
+      if (role === 'doctor') {
+        navigate('/doctor');
         return;
       }
       
-      auth.redirectBasedOnRole(data.user.role);
-      
+      if (role === 'patient') {
+        setError("");
+        setMessage(`Login successful! Your Patient ID: ${data.user.patientInfo?.serial || 'Unknown'}`);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
+        return;
+      }
+
     } catch (err) {
+      clearTimeout(wakeUpTimer); // Stop timer on network error
       const errData = err.response?.data;
       if (errData?.requiresVerification && errData?.email) {
         navigate('/verify-otp', { state: { email: errData.email } });
@@ -116,8 +136,8 @@ const UserLogin = () => {
       }
       setError(errData?.error || errData?.message || err.message || 'An unexpected error occurred. Please try again.');
     } finally {
-      // 3. This guarantees the button ALWAYS unlocks, no matter what happened above
       setIsLoading(false);
+      setIsWakingUp(false);
     }
   };
 
@@ -141,7 +161,8 @@ const UserLogin = () => {
         
         {error && <div className="error-message animated-error">{error}</div>}        
         {message && (
-          <div className={`success-message animated-success ${message.includes('Patient ID:') ? 'patient-id-message' : ''}`}>
+          <div className={`success-message animated-success ${message.includes('Patient ID:') ? 'patient-id-message' : isWakingUp ? 'wakeup-message' : ''}`}
+               style={isWakingUp ? { backgroundColor: 'rgba(52, 152, 219, 0.2)', borderLeft: '4px solid #3498db', color: '#3498db' } : {}}>
             {message.includes('Patient ID:') ? (
               <>
                 <span>Login successful!</span>

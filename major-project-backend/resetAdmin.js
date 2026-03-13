@@ -5,6 +5,8 @@ const readline = require('readline');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const { config } = require('./config');
+const { setServers } = require('node:dns/promises');
+setServers(['8.8.8.8', '1.1.1.1']);
 
 const rl = readline.createInterface({
   input: process.stdin,
